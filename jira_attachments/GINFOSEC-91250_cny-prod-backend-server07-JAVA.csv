@@ -1,0 +1,198 @@
+finding_id,pos,cve,target,plugin_name,state,severity,exploit_available,cvss3_base_score,cvss_base_score,wiz_severity,description,location_path,wiz_first_found,wiz_last_found,wiz_last_fixed,resource_type,issue_id,comments_summary,ticket_key,port,signature_id,current_incident_uuid,exposure_url,results,wiz_component,wiz_technology,wiz_weighted_severity,exploitable,epssScore,riskRating,leanix_internet_exposed,SLA,cvssScore,Tier,first_found,last_found,last_fixed
+e4408842-2782-5d48-b59d-5140a230aacc,,CVE-2024-38819,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-admin.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38819`, which exists in versions `<= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-g5vr-rgqm-vf78) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38819) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://github.com/GhostS3c/CVE-2024-38819), [inTheWild](https://inthewild.io/vuln/CVE-2024-38819).
+
+The vulnerability can be remediated by updating the library to version `6.1.14` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-admin.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:08.661694,2026-01-16 09:14:59,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.669,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:08.661694,2026-01-16 09:14:59,2026-01-16 09:14:59
+b35e7e4f-ab60-5e79-bdbf-fec6b9f1ec21,,CVE-2024-38819,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webflux` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-webflux-5.3.34.jar` and is vulnerable to `CVE-2024-38819`, which exists in versions `<= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-g5vr-rgqm-vf78) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38819) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://github.com/GhostS3c/CVE-2024-38819), [inTheWild](https://inthewild.io/vuln/CVE-2024-38819).
+
+The vulnerability can be remediated by updating the library to version `6.1.14` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webflux`.
+
+The library is associated with the technology `Spring WebFlux`.",/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-webflux-5.3.34.jar,2026-01-06 09:37:10.193020,2026-01-16 09:15:00,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webflux,JAVA,,False,0.669,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.193020,2026-01-16 09:15:00,2026-01-16 09:15:00
+a9b01292-0917-5963-9f78-d070ecd43fee,,CVE-2024-38819,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38819`, which exists in versions `<= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-g5vr-rgqm-vf78) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38819) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://github.com/GhostS3c/CVE-2024-38819), [inTheWild](https://inthewild.io/vuln/CVE-2024-38819).
+
+The vulnerability can be remediated by updating the library to version `6.1.14` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:08.096820,2026-01-16 09:14:59,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.669,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:08.096820,2026-01-16 09:14:59,2026-01-16 09:14:59
+b31653db-d7ba-5a26-a41c-f6812acccbc5,,CVE-2024-38819,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38819`, which exists in versions `<= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-g5vr-rgqm-vf78) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38819) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://github.com/GhostS3c/CVE-2024-38819), [inTheWild](https://inthewild.io/vuln/CVE-2024-38819).
+
+The vulnerability can be remediated by updating the library to version `6.1.14` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:10.300097,2026-01-16 09:15:03,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.669,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.300097,2026-01-16 09:15:03,2026-01-16 09:15:03
+04b65556-7c0b-5516-82ea-fffc6e771c7b,,CVE-2024-38819,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38819`, which exists in versions `<= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-g5vr-rgqm-vf78) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38819) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://github.com/GhostS3c/CVE-2024-38819), [inTheWild](https://inthewild.io/vuln/CVE-2024-38819).
+
+The vulnerability can be remediated by updating the library to version `6.1.14` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:08.409210,2026-01-16 09:15:04,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.669,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:08.409210,2026-01-16 09:15:04,2026-01-16 09:15:04
+369ba002-fd65-5b0c-9b06-f0e47bce9bb4,,CVE-2024-38819,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webflux` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-webflux-5.3.34.jar` and is vulnerable to `CVE-2024-38819`, which exists in versions `<= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-g5vr-rgqm-vf78) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38819) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://github.com/GhostS3c/CVE-2024-38819), [inTheWild](https://inthewild.io/vuln/CVE-2024-38819).
+
+The vulnerability can be remediated by updating the library to version `6.1.14` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webflux`.
+
+The library is associated with the technology `Spring WebFlux`.",/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-webflux-5.3.34.jar,2026-01-06 09:37:10.295524,2026-01-16 09:15:00,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webflux,JAVA,,False,0.669,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.295524,2026-01-16 09:15:00,2026-01-16 09:15:00
+504314d8-ef73-55f9-8b40-c2919ea8747b,,CVE-2024-38819,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-register.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38819`, which exists in versions `<= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-g5vr-rgqm-vf78) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38819) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://github.com/GhostS3c/CVE-2024-38819), [inTheWild](https://inthewild.io/vuln/CVE-2024-38819).
+
+The vulnerability can be remediated by updating the library to version `6.1.14` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-register.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:10.290100,2026-01-16 09:15:03,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.669,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.290100,2026-01-16 09:15:03,2026-01-16 09:15:03
+a6e76994-3726-56d6-8693-33e3ed029e08,,CVE-2024-38819,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38819`, which exists in versions `<= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-g5vr-rgqm-vf78) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38819) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://github.com/GhostS3c/CVE-2024-38819), [inTheWild](https://inthewild.io/vuln/CVE-2024-38819).
+
+The vulnerability can be remediated by updating the library to version `6.1.14` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:09.130715,2026-01-16 09:14:59,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.669,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:09.130715,2026-01-16 09:14:59,2026-01-16 09:14:59
+2bc2128c-d335-587f-be3b-772cd46273c6,,CVE-2024-38819,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38819`, which exists in versions `<= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-g5vr-rgqm-vf78) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38819) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://github.com/GhostS3c/CVE-2024-38819), [inTheWild](https://inthewild.io/vuln/CVE-2024-38819).
+
+The vulnerability can be remediated by updating the library to version `6.1.14` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:10.788072,2026-01-16 09:15:04,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.669,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.788072,2026-01-16 09:15:04,2026-01-16 09:15:04
+030acbf4-b4e7-5e2c-9b21-950d1f065829,,CVE-2024-38816,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-admin.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38816`, which exists in versions `>= 5.3.0, <= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-cx7f-g6mp-7hqm) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38816) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://api.vulncheck.com/v3/index/initial-access?cve=CVE-2024-38816), [VulnCheck KEV](https://cyble.com/blog/cyble-sensors-detect-attacks-on-java-framework-iot-devices/).
+
+The vulnerability can be remediated by updating the library to version `6.1.13` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-admin.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:08.700265,2026-01-16 09:14:59,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.934,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:08.700265,2026-01-16 09:14:59,2026-01-16 09:14:59
+9463687e-c66b-50ce-89d1-748f11a638fb,,CVE-2024-38816,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webflux` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-webflux-5.3.34.jar` and is vulnerable to `CVE-2024-38816`, which exists in versions `>= 5.3.0, <= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-cx7f-g6mp-7hqm) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38816) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://api.vulncheck.com/v3/index/initial-access?cve=CVE-2024-38816), [VulnCheck KEV](https://cyble.com/blog/cyble-sensors-detect-attacks-on-java-framework-iot-devices/).
+
+The vulnerability can be remediated by updating the library to version `6.1.13` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webflux`.
+
+The library is associated with the technology `Spring WebFlux`.",/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-webflux-5.3.34.jar,2026-01-06 09:37:10.175473,2026-01-16 09:15:00,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webflux,JAVA,,False,0.934,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.175473,2026-01-16 09:15:00,2026-01-16 09:15:00
+cb9aef15-d4a7-56aa-b3f0-6154635fabdf,,CVE-2024-38816,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webflux` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-webflux-5.3.34.jar` and is vulnerable to `CVE-2024-38816`, which exists in versions `>= 5.3.0, <= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-cx7f-g6mp-7hqm) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38816) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://api.vulncheck.com/v3/index/initial-access?cve=CVE-2024-38816), [VulnCheck KEV](https://cyble.com/blog/cyble-sensors-detect-attacks-on-java-framework-iot-devices/).
+
+The vulnerability can be remediated by updating the library to version `6.1.13` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webflux`.
+
+The library is associated with the technology `Spring WebFlux`.",/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-webflux-5.3.34.jar,2026-01-06 09:37:10.278617,2026-01-16 09:15:00,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webflux,JAVA,,False,0.934,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.278617,2026-01-16 09:15:00,2026-01-16 09:15:00
+c92b4bd6-a55a-5420-ad76-a130bf383c60,,CVE-2024-38816,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-register.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38816`, which exists in versions `>= 5.3.0, <= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-cx7f-g6mp-7hqm) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38816) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://api.vulncheck.com/v3/index/initial-access?cve=CVE-2024-38816), [VulnCheck KEV](https://cyble.com/blog/cyble-sensors-detect-attacks-on-java-framework-iot-devices/).
+
+The vulnerability can be remediated by updating the library to version `6.1.13` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-register.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:10.269958,2026-01-16 09:15:03,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.934,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.269958,2026-01-16 09:15:03,2026-01-16 09:15:03
+c7992446-3150-53be-9aee-a63413c84bce,,CVE-2024-38816,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38816`, which exists in versions `>= 5.3.0, <= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-cx7f-g6mp-7hqm) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38816) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://api.vulncheck.com/v3/index/initial-access?cve=CVE-2024-38816), [VulnCheck KEV](https://cyble.com/blog/cyble-sensors-detect-attacks-on-java-framework-iot-devices/).
+
+The vulnerability can be remediated by updating the library to version `6.1.13` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:08.073757,2026-01-16 09:14:59,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.934,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:08.073757,2026-01-16 09:14:59,2026-01-16 09:14:59
+06516067-c0f7-5643-9706-c68dd4234827,,CVE-2024-38816,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38816`, which exists in versions `>= 5.3.0, <= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-cx7f-g6mp-7hqm) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38816) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://api.vulncheck.com/v3/index/initial-access?cve=CVE-2024-38816), [VulnCheck KEV](https://cyble.com/blog/cyble-sensors-detect-attacks-on-java-framework-iot-devices/).
+
+The vulnerability can be remediated by updating the library to version `6.1.13` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:08.470881,2026-01-16 09:15:04,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.934,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:08.470881,2026-01-16 09:15:04,2026-01-16 09:15:04
+4cfbd212-b301-5560-8174-ca55d7f4263c,,CVE-2024-38816,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38816`, which exists in versions `>= 5.3.0, <= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-cx7f-g6mp-7hqm) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38816) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://api.vulncheck.com/v3/index/initial-access?cve=CVE-2024-38816), [VulnCheck KEV](https://cyble.com/blog/cyble-sensors-detect-attacks-on-java-framework-iot-devices/).
+
+The vulnerability can be remediated by updating the library to version `6.1.13` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:10.282748,2026-01-16 09:15:03,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.934,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.282748,2026-01-16 09:15:03,2026-01-16 09:15:03
+f6e04039-7415-5a83-a2b3-0348e146cd76,,CVE-2024-38816,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38816`, which exists in versions `>= 5.3.0, <= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-cx7f-g6mp-7hqm) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38816) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://api.vulncheck.com/v3/index/initial-access?cve=CVE-2024-38816), [VulnCheck KEV](https://cyble.com/blog/cyble-sensors-detect-attacks-on-java-framework-iot-devices/).
+
+The vulnerability can be remediated by updating the library to version `6.1.13` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:09.150970,2026-01-16 09:14:59,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.934,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:09.150970,2026-01-16 09:14:59,2026-01-16 09:14:59
+f4505caa-893c-5010-9a0d-4748965132e4,,CVE-2024-38816,cny-prod-backend-server07,,Open,,False,,,HIGH,"The library `org.springframework:spring-webmvc` version `5.3.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar` and is vulnerable to `CVE-2024-38816`, which exists in versions `>= 5.3.0, <= 5.3.39`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-cx7f-g6mp-7hqm) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38816) severity: `High`).
+
+This vulnerability has a known exploit available. Sources: [VulnCheck](https://api.vulncheck.com/v3/index/initial-access?cve=CVE-2024-38816), [VulnCheck KEV](https://cyble.com/blog/cyble-sensors-detect-attacks-on-java-framework-iot-devices/).
+
+The vulnerability can be remediated by updating the library to version `6.1.13` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework:spring-webmvc`.
+
+The library is associated with the technology `Spring Web MVC`.",/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/spring-webmvc-5.3.34.jar,2026-01-06 09:37:10.748948,2026-01-16 09:15:04,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,org.springframework:spring-webmvc,JAVA,,False,0.934,Medium,True,90,7.5,Tier 3,2026-01-06 09:37:10.748948,2026-01-16 09:15:04,2026-01-16 09:15:04
+9e1b36d4-2bcf-5097-a58e-d88491064222,,CVE-2023-26119,cny-prod-backend-server07,,Open,,False,,,CRITICAL,"The library `net.sourceforge.htmlunit:htmlunit` version `2.60.0` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/htmlunit-2.60.0.jar` and is vulnerable to `CVE-2023-26119`, which exists in versions `< 3.0.0`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-3xrr-7m6p-p7xh) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2023-26119) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://siebene.github.io/2022/12/30/HtmlUnit-RCE/).
+
+The vulnerability can be remediated by updating the library to version `3.0.0` or higher, using `mvn versions:use-latest-releases -Dincludes=net.sourceforge.htmlunit:htmlunit`.",/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/htmlunit-2.60.0.jar,2026-01-06 09:37:09.011102,2026-01-16 09:15:00,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,net.sourceforge.htmlunit:htmlunit,JAVA,,False,0.04,High,True,30,9.8,Tier 1,2026-01-06 09:37:09.011102,2026-01-16 09:15:00,2026-01-16 09:15:00
+df73e465-23ce-58fe-85f4-c55e5d95b909,,CVE-2022-25845,cny-prod-backend-server07,,Open,,False,,,CRITICAL,"The library `com.alibaba:fastjson` version `1.2.75` was detected in `Maven library manager` located at `/home/ec2-user/.arthas/lib/3.5.5/arthas/arthas-core.jar -> META-INF/maven/com.alibaba/fastjson` and is vulnerable to `CVE-2022-25845`, which exists in versions `>= 1.2.25, < 1.2.83`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-pv7h-hx5h-mgfj) with vendor severity: `High` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2022-25845) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://jfrog.com/blog/cve-2022-25845-analyzing-the-fastjson-auto-type-bypass-rce-vulnerability/).
+
+The vulnerability can be remediated by updating the library to version `1.2.83` or higher, using `mvn versions:use-latest-releases -Dincludes=com.alibaba:fastjson`.",/home/ec2-user/.arthas/lib/3.5.5/arthas/arthas-core.jar -> META-INF/maven/com.alibaba/fastjson,2026-01-06 09:37:08.822549,2026-01-16 09:15:04,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,com.alibaba:fastjson,JAVA,,False,0.899,High,True,30,9.8,Tier 1,2026-01-06 09:37:08.822549,2026-01-16 09:15:04,2026-01-16 09:15:04
+bb4e19d6-d3e8-5f17-801f-9818da54a9e8,,CVE-2022-25845,cny-prod-backend-server07,,Open,,False,,,CRITICAL,"The library `com.alibaba:fastjson` version `1.2.75` was detected in `Maven library manager` located at `/home/ec2-user/.arthas/lib/3.6.0/arthas/arthas-core.jar -> META-INF/maven/com.alibaba/fastjson` and is vulnerable to `CVE-2022-25845`, which exists in versions `>= 1.2.25, < 1.2.83`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-pv7h-hx5h-mgfj) with vendor severity: `High` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2022-25845) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://jfrog.com/blog/cve-2022-25845-analyzing-the-fastjson-auto-type-bypass-rce-vulnerability/).
+
+The vulnerability can be remediated by updating the library to version `1.2.83` or higher, using `mvn versions:use-latest-releases -Dincludes=com.alibaba:fastjson`.",/home/ec2-user/.arthas/lib/3.6.0/arthas/arthas-core.jar -> META-INF/maven/com.alibaba/fastjson,2026-01-06 09:37:09.277307,2026-01-16 09:15:04,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,com.alibaba:fastjson,JAVA,,False,0.899,High,True,30,9.8,Tier 1,2026-01-06 09:37:09.277307,2026-01-16 09:15:04,2026-01-16 09:15:04
+819b57a0-bdfb-5df0-b662-5da844043e47,,CVE-2022-25845,cny-prod-backend-server07,,Open,,False,,,CRITICAL,"The library `com.alibaba:fastjson` version `1.2.75` was detected in `Maven library manager` located at `/home/ec2-user/.arthas/lib/3.5.6/arthas/arthas-core.jar -> META-INF/maven/com.alibaba/fastjson` and is vulnerable to `CVE-2022-25845`, which exists in versions `>= 1.2.25, < 1.2.83`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-pv7h-hx5h-mgfj) with vendor severity: `High` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2022-25845) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://jfrog.com/blog/cve-2022-25845-analyzing-the-fastjson-auto-type-bypass-rce-vulnerability/).
+
+The vulnerability can be remediated by updating the library to version `1.2.83` or higher, using `mvn versions:use-latest-releases -Dincludes=com.alibaba:fastjson`.",/home/ec2-user/.arthas/lib/3.5.6/arthas/arthas-core.jar -> META-INF/maven/com.alibaba/fastjson,2026-01-06 09:37:07.516273,2026-01-16 09:15:00,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,com.alibaba:fastjson,JAVA,,False,0.899,High,True,30,9.8,Tier 1,2026-01-06 09:37:07.516273,2026-01-16 09:15:00,2026-01-16 09:15:00
+77496228-a27e-5342-93eb-f34d5acd3f2b,,CVE-2022-25845,cny-prod-backend-server07,,Open,,False,,,CRITICAL,"The library `com.alibaba:fastjson` version `1.2.75` was detected in `Maven library manager` located at `/home/ec2-user/.arthas/lib/3.5.4/arthas/arthas-core.jar -> META-INF/maven/com.alibaba/fastjson` and is vulnerable to `CVE-2022-25845`, which exists in versions `>= 1.2.25, < 1.2.83`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-pv7h-hx5h-mgfj) with vendor severity: `High` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2022-25845) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://jfrog.com/blog/cve-2022-25845-analyzing-the-fastjson-auto-type-bypass-rce-vulnerability/).
+
+The vulnerability can be remediated by updating the library to version `1.2.83` or higher, using `mvn versions:use-latest-releases -Dincludes=com.alibaba:fastjson`.",/home/ec2-user/.arthas/lib/3.5.4/arthas/arthas-core.jar -> META-INF/maven/com.alibaba/fastjson,2026-01-06 09:37:10.902053,2026-01-16 09:15:01,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,com.alibaba:fastjson,JAVA,,False,0.899,High,True,30,9.8,Tier 1,2026-01-06 09:37:10.902053,2026-01-16 09:15:01,2026-01-16 09:15:01

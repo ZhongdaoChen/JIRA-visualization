@@ -1,0 +1,43 @@
+finding_id,pos,cve,target,plugin_name,state,severity,exploit_available,cvss3_base_score,cvss_base_score,wiz_severity,description,location_path,wiz_first_found,wiz_last_found,wiz_last_fixed,resource_type,issue_id,comments_summary,ticket_key,port,signature_id,current_incident_uuid,exposure_url,results,wiz_component,wiz_technology,wiz_weighted_severity,exploitable,epssScore,riskRating,leanix_internet_exposed,SLA,cvssScore,Tier,first_found,last_found,last_fixed
+b822c66b-7614-563d-9be1-5b9a12049b9b,,CVE-2025-59419,cny-prod-backend-server04,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.101.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp,2026-01-06 09:33:03.354659,2026-02-10 17:20:44,,VIRTUAL_MACHINE,646b9a1b-ef45-4f0f-987c-277043ec242e,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-01-06 09:33:03.354659,2026-02-10 17:20:44,2026-02-10 17:20:44
+51f12d7b-f353-51d8-b5f7-67577febcbf4,,CVE-2025-59419,cny-prod-backend-server04,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.101.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp,2026-01-06 09:33:01.454721,2026-02-10 17:20:46,,VIRTUAL_MACHINE,646b9a1b-ef45-4f0f-987c-277043ec242e,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-01-06 09:33:01.454721,2026-02-10 17:20:46,2026-02-10 17:20:46
+de4a76f0-1e00-5377-af9e-221491697111,,CVE-2025-59419,cny-prod-backend-server04,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.101.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar,2026-01-06 09:33:02.118578,2026-02-10 17:20:45,,VIRTUAL_MACHINE,646b9a1b-ef45-4f0f-987c-277043ec242e,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-01-06 09:33:02.118578,2026-02-10 17:20:45,2026-02-10 17:20:45
+f17f13f7-6753-5222-bbfd-a82dfaffcb77,,CVE-2025-59419,cny-prod-backend-server04,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.101.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar,2026-01-06 09:32:59.996260,2026-02-10 17:20:46,,VIRTUAL_MACHINE,646b9a1b-ef45-4f0f-987c-277043ec242e,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-01-06 09:32:59.996260,2026-02-10 17:20:46,2026-02-10 17:20:46
+0619ef2b-4ffb-5500-93d0-c68d641e0314,,CVE-2025-59419,cny-prod-backend-server04,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.101.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar,2026-01-06 09:32:59.326784,2026-02-10 17:20:45,,VIRTUAL_MACHINE,646b9a1b-ef45-4f0f-987c-277043ec242e,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-01-06 09:32:59.326784,2026-02-10 17:20:45,2026-02-10 17:20:45
+b66f9547-08f0-5e01-bb2d-7831e9faf988,,CVE-2025-59419,cny-prod-backend-server04,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.101.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.101.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp,2026-01-06 09:33:00.152226,2026-02-10 17:20:45,,VIRTUAL_MACHINE,646b9a1b-ef45-4f0f-987c-277043ec242e,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-01-06 09:33:00.152226,2026-02-10 17:20:45,2026-02-10 17:20:45

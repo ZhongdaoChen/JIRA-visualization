@@ -1,0 +1,96 @@
+finding_id,pos,cve,target,plugin_name,state,severity,exploit_available,cvss3_base_score,cvss_base_score,wiz_severity,description,location_path,wiz_first_found,wiz_last_found,wiz_last_fixed,resource_type,issue_id,comments_summary,ticket_key,port,signature_id,current_incident_uuid,exposure_url,results,wiz_component,wiz_technology,wiz_weighted_severity,exploitable,epssScore,riskRating,leanix_internet_exposed,SLA,cvssScore,Tier,first_found,last_found,last_fixed
+851fffc3-b31c-5275-bd1d-138f42906c51,,CVE-2025-41232,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-admin.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/hzero-admin.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-01-08 20:39:16.458971,2026-01-18 19:05:16,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 1,2026-01-08 20:39:16.458971,2026-01-18 19:05:16,2026-01-18 19:05:16
+dc8ec048-8aff-55ad-a44d-b272c9573f8b,,CVE-2025-24813,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.apache.tomcat.embed:tomcat-embed-core` version `10.1.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-register.jar -> BOOT-INF/lib/tomcat-embed-core-10.1.34.jar` and is vulnerable to `CVE-2025-24813`, which exists in versions `>= 10.1.0-M1, < 10.1.35`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-83qj-6fr2-vhqg) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2025-24813) severity: `Critical`).
+
+This vulnerability has a known exploit available. Sources: [CISA Known Exploited Vulnerabilities Catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog), [Exploit Database](https://www.exploit-db.com/exploits/52134), Github [[1](https://github.com/absholi7ly/POC-CVE-2025-24813/blob/main/README.md), [2](https://github.com/absholi7ly/POC-CVE-2025-24813)], [VulnCheck](https://raw.githubusercontent.com/rapid7/metasploit-framework/master/modules/exploits/multi/http/tomcat_partial_put_deserialization.rb), [VulnCheck KEV](https://dashboard.shadowserver.org/statistics/honeypot/vulnerability/map/?day=2025-03-14&host_type=src&vulnerability=cve-2025-24813).
+
+The vulnerability can be remediated by updating the library to version `10.1.35` or higher, using `mvn versions:use-latest-releases -Dincludes=org.apache.tomcat.embed:tomcat-embed-core`.
+
+>**Wiz Threat Research note:** 
+>Use our [Host Configuration Rule](https://app.wiz.io/policies/host-configuration-rules#%7E%28filters%7E%28shortName%7E%28equals%7E%28%7E%27whcr-apachetomcat-003%29%29%29%29) in order to identify Apache Tomcat instances allowing Servlet write access.",/home/ecp-app/CNY/hzero-register.jar -> BOOT-INF/lib/tomcat-embed-core-10.1.34.jar,2026-01-08 20:39:16.536090,2026-01-18 19:05:17,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.apache.tomcat.embed:tomcat-embed-core,JAVA,,True,0.9420000000000001,Critical,True,5,9.8,Tier 1,2026-01-08 20:39:16.536090,2026-01-18 19:05:17,2026-01-18 19:05:17
+69369855-807c-59ca-b5fa-22662ac2d9e4,,CVE-2025-24813,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.apache.tomcat.embed:tomcat-embed-core` version `10.1.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/tomcat-embed-core-10.1.34.jar` and is vulnerable to `CVE-2025-24813`, which exists in versions `>= 10.1.0-M1, < 10.1.35`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-83qj-6fr2-vhqg) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2025-24813) severity: `Critical`).
+
+This vulnerability has a known exploit available. Sources: [CISA Known Exploited Vulnerabilities Catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog), [Exploit Database](https://www.exploit-db.com/exploits/52134), Github [[1](https://github.com/absholi7ly/POC-CVE-2025-24813/blob/main/README.md), [2](https://github.com/absholi7ly/POC-CVE-2025-24813)], [VulnCheck](https://raw.githubusercontent.com/rapid7/metasploit-framework/master/modules/exploits/multi/http/tomcat_partial_put_deserialization.rb), [VulnCheck KEV](https://dashboard.shadowserver.org/statistics/honeypot/vulnerability/map/?day=2025-03-14&host_type=src&vulnerability=cve-2025-24813).
+
+The vulnerability can be remediated by updating the library to version `10.1.35` or higher, using `mvn versions:use-latest-releases -Dincludes=org.apache.tomcat.embed:tomcat-embed-core`.
+
+>**Wiz Threat Research note:** 
+>Use our [Host Configuration Rule](https://app.wiz.io/policies/host-configuration-rules#%7E%28filters%7E%28shortName%7E%28equals%7E%28%7E%27whcr-apachetomcat-003%29%29%29%29) in order to identify Apache Tomcat instances allowing Servlet write access.",/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/tomcat-embed-core-10.1.34.jar,2026-01-08 20:39:17.343424,2026-01-18 19:05:16,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.apache.tomcat.embed:tomcat-embed-core,JAVA,,True,0.9420000000000001,Critical,True,5,9.8,Tier 1,2026-01-08 20:39:17.343424,2026-01-18 19:05:16,2026-01-18 19:05:16
+9546387b-0145-5e2b-b085-36f38f70af9c,,CVE-2025-41232,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-01-08 20:39:17.404491,2026-01-18 19:05:17,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 1,2026-01-08 20:39:17.404491,2026-01-18 19:05:17,2026-01-18 19:05:17
+41ded614-41f1-5ea3-a55e-1fa65a315e17,,CVE-2025-41232,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-01-08 20:39:18.186995,2026-01-18 19:05:17,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 1,2026-01-08 20:39:18.186995,2026-01-18 19:05:17,2026-01-18 19:05:17
+7acca0f2-e70a-5d8d-91e1-b0f0190e8a18,,CVE-2025-41232,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-01-15 09:06:40.394056,2026-01-18 19:05:17,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 1,2026-01-15 09:06:40.394056,2026-01-18 19:05:17,2026-01-18 19:05:17
+b8866279-762a-51a0-98d3-b5dc5c504726,,CVE-2025-41232,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-license.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/hzero-license.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-01-15 09:06:44.531843,2026-01-18 19:05:16,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 1,2026-01-15 09:06:44.531843,2026-01-18 19:05:16,2026-01-18 19:05:16
+434f9a5e-1bff-568a-a471-de8c5128cfa9,,CVE-2025-41232,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-01-16 09:24:55.213125,2026-01-18 19:05:18,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 1,2026-01-16 09:24:55.213125,2026-01-18 19:05:18,2026-01-18 19:05:18
+4dccec48-d5ae-53d0-a5a6-e6e5d195cb7a,,CVE-2024-38821,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-web` version `6.3.3` was detected in `Maven library manager` located at `/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/spring-security-web-6.3.3.jar` and is vulnerable to `CVE-2024-38821`, which exists in versions `>= 6.3.0, < 6.3.4`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-c4q5-6c82-3qpw) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38821) severity: `Critical`).
+
+This vulnerability has a known exploit available. Sources: [Github](https://github.com/mouadk/cve-2024-38821/tree/main), [VulnCheck](https://www.deep-kondah.com/spring-webflux-static-resource-access-vulnerability-cve-2024-38821-explained/).
+
+The vulnerability can be remediated by updating the library to version `6.3.4` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-web`.",/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/spring-security-web-6.3.3.jar,2026-01-08 20:39:17.434936,2026-01-18 19:05:18,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.springframework.security:spring-security-web,JAVA,,False,0.18600000000000003,High,True,30,9.1,Tier 1,2026-01-08 20:39:17.434936,2026-01-18 19:05:18,2026-01-18 19:05:18
+3a55b59b-ee02-53a7-840d-fee71ed133e9,,CVE-2024-38821,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-web` version `6.3.3` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-security-web-6.3.3.jar` and is vulnerable to `CVE-2024-38821`, which exists in versions `>= 6.3.0, < 6.3.4`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-c4q5-6c82-3qpw) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38821) severity: `Critical`).
+
+This vulnerability has a known exploit available. Sources: [Github](https://github.com/mouadk/cve-2024-38821/tree/main), [VulnCheck](https://www.deep-kondah.com/spring-webflux-static-resource-access-vulnerability-cve-2024-38821-explained/).
+
+The vulnerability can be remediated by updating the library to version `6.3.4` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-web`.",/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-security-web-6.3.3.jar,2026-01-08 20:39:18.208528,2026-01-15 09:06:39,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.springframework.security:spring-security-web,JAVA,,False,0.18600000000000003,High,True,30,9.1,Tier 1,2026-01-08 20:39:18.208528,2026-01-15 09:06:39,2026-01-15 09:06:39
+ee754e3e-615d-5a70-919e-83514c2fb97a,,CVE-2024-38821,cny-sit-backend-server1,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-web` version `6.3.3` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-security-web-6.3.3.jar` and is vulnerable to `CVE-2024-38821`, which exists in versions `>= 6.3.0, < 6.3.4`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-c4q5-6c82-3qpw) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2024-38821) severity: `Critical`).
+
+This vulnerability has a known exploit available. Sources: [Github](https://github.com/mouadk/cve-2024-38821/tree/main), [VulnCheck](https://www.deep-kondah.com/spring-webflux-static-resource-access-vulnerability-cve-2024-38821-explained/).
+
+The vulnerability can be remediated by updating the library to version `6.3.4` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-web`.",/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-security-web-6.3.3.jar,2026-01-08 20:39:16.057085,2026-01-12 22:57:40,,VIRTUAL_MACHINE,5054fa83-7fe2-4da9-bec5-8cd2e3a04838,,,,,,,,org.springframework.security:spring-security-web,JAVA,,False,0.18600000000000003,High,True,30,9.1,Tier 1,2026-01-08 20:39:16.057085,2026-01-12 22:57:40,2026-01-12 22:57:40

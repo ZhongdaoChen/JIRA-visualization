@@ -1,0 +1,29 @@
+finding_id,pos,cve,target,plugin_name,state,severity,exploit_available,cvss3_base_score,cvss_base_score,wiz_severity,description,location_path,wiz_first_found,wiz_last_found,wiz_last_fixed,resource_type,issue_id,comments_summary,ticket_key,port,signature_id,current_incident_uuid,exposure_url,results,wiz_component,wiz_technology,wiz_weighted_severity,exploitable,epssScore,riskRating,leanix_internet_exposed,SLA,cvssScore,Tier,first_found,last_found,last_fixed
+45bad974-b504-56fa-8f92-9e4959543581,,CVE-2021-26291,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.apache.maven:maven-compat` version `3.6.3` was detected in `Maven library manager` located at `/u01/package/apache-maven-3.6.3/lib/maven-compat-3.6.3.jar` and is vulnerable to `CVE-2021-26291`, which exists in versions `< 3.8.1`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-2f88-5hg8-9x2x) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2021-26291) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.whitesourcesoftware.com/resources/blog/maven-security-vulnerability-cve-2021-26291/).
+
+The vulnerability can be remediated by updating the library to version `3.8.1` or higher, using `mvn versions:use-latest-releases -Dincludes=org.apache.maven:maven-compat`.",/[Partition=9d9de204]/package/apache-maven-3.6.3/lib/maven-compat-3.6.3.jar,2026-01-06 09:34:13.543572,2026-01-27 20:08:09,,VIRTUAL_MACHINE,6b61e1d9-eea3-4877-9812-b8d927c7c844,,,,,,,,org.apache.maven:maven-compat,JAVA,,False,0.455,High,True,30,9.1,Tier 1,2026-01-06 09:34:13.543572,2026-01-27 20:08:09,2026-01-27 20:08:09
+67e325ba-2b39-509b-8338-2a401142b756,,CVE-2021-26291,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.apache.maven:maven-compat` version `3.6.3` was detected in `Maven library manager` located at `/u01/package/apache-maven-3.6.3/lib/maven-compat-3.6.3.jar -> META-INF/maven/org.apache.maven/maven-compat` and is vulnerable to `CVE-2021-26291`, which exists in versions `< 3.8.1`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-2f88-5hg8-9x2x) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2021-26291) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.whitesourcesoftware.com/resources/blog/maven-security-vulnerability-cve-2021-26291/).
+
+The vulnerability can be remediated by updating the library to version `3.8.1` or higher, using `mvn versions:use-latest-releases -Dincludes=org.apache.maven:maven-compat`.",/[Partition=9d9de204]/package/apache-maven-3.6.3/lib/maven-compat-3.6.3.jar -> META-INF/maven/org.apache.maven/maven-compat,2026-01-06 09:34:13.565106,2026-01-27 20:08:09,,VIRTUAL_MACHINE,6b61e1d9-eea3-4877-9812-b8d927c7c844,,,,,,,,org.apache.maven:maven-compat,JAVA,,False,0.455,High,True,30,9.1,Tier 1,2026-01-06 09:34:13.565106,2026-01-27 20:08:09,2026-01-27 20:08:09
+85d6d02e-e8df-5649-9194-b7eb445dcbd0,,CVE-2021-26291,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.apache.maven:maven-core` version `3.6.3` was detected in `Maven library manager` located at `/u01/package/apache-maven-3.6.3/lib/maven-core-3.6.3.jar -> META-INF/maven/org.apache.maven/maven-core` and is vulnerable to `CVE-2021-26291`, which exists in versions `< 3.8.1`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-2f88-5hg8-9x2x) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2021-26291) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.whitesourcesoftware.com/resources/blog/maven-security-vulnerability-cve-2021-26291/).
+
+The vulnerability can be remediated by updating the library to version `3.8.1` or higher, using `mvn versions:use-latest-releases -Dincludes=org.apache.maven:maven-core`.",/[Partition=9d9de204]/package/apache-maven-3.6.3/lib/maven-core-3.6.3.jar -> META-INF/maven/org.apache.maven/maven-core,2026-01-06 09:34:13.469467,2026-01-27 20:08:09,,VIRTUAL_MACHINE,6b61e1d9-eea3-4877-9812-b8d927c7c844,,,,,,,,org.apache.maven:maven-core,JAVA,,False,0.455,High,True,30,9.1,Tier 1,2026-01-06 09:34:13.469467,2026-01-27 20:08:09,2026-01-27 20:08:09
+a2fcd37e-4d0c-5d34-8890-75a8fad70c6a,,CVE-2021-26291,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.apache.maven:maven-core` version `3.6.3` was detected in `Maven library manager` located at `/u01/package/apache-maven-3.6.3/lib/maven-core-3.6.3.jar` and is vulnerable to `CVE-2021-26291`, which exists in versions `< 3.8.1`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-2f88-5hg8-9x2x) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2021-26291) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.whitesourcesoftware.com/resources/blog/maven-security-vulnerability-cve-2021-26291/).
+
+The vulnerability can be remediated by updating the library to version `3.8.1` or higher, using `mvn versions:use-latest-releases -Dincludes=org.apache.maven:maven-core`.",/[Partition=9d9de204]/package/apache-maven-3.6.3/lib/maven-core-3.6.3.jar,2026-01-06 09:34:13.354429,2026-01-27 20:08:09,,VIRTUAL_MACHINE,6b61e1d9-eea3-4877-9812-b8d927c7c844,,,,,,,,org.apache.maven:maven-core,JAVA,,False,0.455,High,True,30,9.1,Tier 1,2026-01-06 09:34:13.354429,2026-01-27 20:08:09,2026-01-27 20:08:09

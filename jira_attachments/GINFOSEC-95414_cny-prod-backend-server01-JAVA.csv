@@ -1,0 +1,126 @@
+finding_id,pos,cve,target,plugin_name,state,severity,exploit_available,cvss3_base_score,cvss_base_score,wiz_severity,description,location_path,wiz_first_found,wiz_last_found,wiz_last_fixed,resource_type,issue_id,comments_summary,ticket_key,port,signature_id,current_incident_uuid,exposure_url,results,wiz_component,wiz_technology,wiz_weighted_severity,exploitable,epssScore,riskRating,leanix_internet_exposed,SLA,cvssScore,Tier,first_found,last_found,last_fixed
+1e34bf08-dc5d-5832-8e3f-311c68fd4e7d,,CVE-2025-59419,cny-prod-backend-server01,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.116.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar,2026-03-12 03:37:53.496979,2026-03-13 02:46:04,,VIRTUAL_MACHINE,,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-03-12 03:37:53.496979,2026-03-13 02:46:04,2026-03-13 02:46:04
+12c85806-9788-53ef-a5ff-3398ea7fa969,,CVE-2025-59419,cny-prod-backend-server01,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.116.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar,2026-03-12 03:37:29.001512,2026-03-13 02:46:06,,VIRTUAL_MACHINE,,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-03-12 03:37:29.001512,2026-03-13 02:46:06,2026-03-13 02:46:06
+74d0526a-e798-54ee-964a-0a58c0dc3712,,CVE-2025-59419,cny-prod-backend-server01,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.116.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar,2026-03-12 03:38:08.732461,2026-03-13 02:46:04,,VIRTUAL_MACHINE,,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-03-12 03:38:08.732461,2026-03-13 02:46:04,2026-03-13 02:46:04
+99ec3fc3-b3d3-5450-97c5-030577791c31,,CVE-2025-59419,cny-prod-backend-server01,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.116.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp,2026-03-12 03:39:15.184476,2026-03-13 02:46:02,,VIRTUAL_MACHINE,,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-03-12 03:39:15.184476,2026-03-13 02:46:02,2026-03-13 02:46:02
+27c8b7e2-59d4-5e74-92f9-d04762ce4a1a,,CVE-2025-59419,cny-prod-backend-server01,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.116.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp,2026-03-12 03:39:14.429557,2026-03-13 02:46:03,,VIRTUAL_MACHINE,,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-03-12 03:39:14.429557,2026-03-13 02:46:03,2026-03-13 02:46:03
+cc536e3f-3527-55e0-8888-68d155cee7fd,,CVE-2025-59419,cny-prod-backend-server01,,Open,,False,,,MEDIUM,"The library `io.netty:netty-codec-smtp` version `4.1.116.Final` was detected in `Maven library manager` located at `/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp` and is vulnerable to `CVE-2025-59419`, which exists in versions `< 4.1.128.Final`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-jq43-27x9-3v86) with vendor severity: `High`.
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://www.depthfirst.com/post/our-ai-agent-found-a-netty-zero-day-that-bypasses-email-authentication-the-story-of-cve-2025-59419).
+
+The vulnerability can be remediated by updating the library to version `4.1.128.Final` or higher, using `mvn versions:use-latest-releases -Dincludes=io.netty:netty-codec-smtp`.",/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/netty-codec-smtp-4.1.116.Final.jar -> META-INF/maven/io.netty/netty-codec-smtp,2026-03-12 03:39:30.527003,2026-03-13 02:46:06,,VIRTUAL_MACHINE,,,,,,,,,io.netty:netty-codec-smtp,JAVA,,False,0.044000000000000004,Low,True,365,5.5,Tier 3,2026-03-12 03:39:30.527003,2026-03-13 02:46:06,2026-03-13 02:46:06
+524b16b6-758f-5537-ba9e-6ed491050ad7,,CVE-2025-66516,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.apache.tika:tika-core` version `1.28.4` was detected in `Maven library manager` located at `/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/tika-core-1.28.4.jar -> META-INF/maven/org.apache.tika/tika-core` and is vulnerable to `CVE-2025-66516`, which exists in versions `>= 1.13, <= 3.2.1`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-f58c-gq56-vjjf) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2025-66516) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://hackyboiz.github.io/2025/12/24/gongjae/CVE-2025-66516/).
+
+The vulnerability can be remediated by updating the library to version `3.2.2` or higher, using `mvn versions:use-latest-releases -Dincludes=org.apache.tika:tika-core`.
+
+The library is associated with the technology `Apache Tika`.",/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/tika-core-1.28.4.jar -> META-INF/maven/org.apache.tika/tika-core,2026-03-12 03:36:21.432519,2026-03-13 02:46:03,,VIRTUAL_MACHINE,,,,,,,,,org.apache.tika:tika-core,JAVA,,False,,High,True,30,10.0,Tier 3,2026-03-12 03:36:21.432519,2026-03-13 02:46:03,2026-03-13 02:46:03
+ab3dfad0-de18-5604-8c75-a3238e982c42,,CVE-2025-41232,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-admin.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/hzero-admin.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-03-12 03:37:59.780481,2026-03-13 02:46:02,,VIRTUAL_MACHINE,,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 3,2026-03-12 03:37:59.780481,2026-03-13 02:46:02,2026-03-13 02:46:02
+d9ed62d3-ef64-57d7-93e7-c8eb42bb02ff,,CVE-2025-24813,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.apache.tomcat.embed:tomcat-embed-core` version `10.1.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/tomcat-embed-core-10.1.34.jar` and is vulnerable to `CVE-2025-24813`, which exists in versions `>= 10.1.0-M1, < 10.1.35`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-83qj-6fr2-vhqg) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2025-24813) severity: `Critical`).
+
+This vulnerability has a known exploit available. Sources: [CISA Known Exploited Vulnerabilities Catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog), [Exploit Database](https://www.exploit-db.com/exploits/52134), Github [[1](https://github.com/absholi7ly/POC-CVE-2025-24813/blob/main/README.md), [2](https://github.com/absholi7ly/POC-CVE-2025-24813)], [VulnCheck](https://raw.githubusercontent.com/rapid7/metasploit-framework/master/modules/exploits/multi/http/tomcat_partial_put_deserialization.rb), [VulnCheck KEV](https://dashboard.shadowserver.org/statistics/honeypot/vulnerability/map/?day=2025-03-14&host_type=src&vulnerability=cve-2025-24813).
+
+The vulnerability can be remediated by updating the library to version `10.1.35` or higher, using `mvn versions:use-latest-releases -Dincludes=org.apache.tomcat.embed:tomcat-embed-core`.
+
+>**Wiz Threat Research note:** 
+>Use our [Host Configuration Rule](https://app.wiz.io/policies/host-configuration-rules#%7E%28filters%7E%28shortName%7E%28equals%7E%28%7E%27whcr-apachetomcat-003%29%29%29%29) in order to identify Apache Tomcat instances allowing Servlet write access.",/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/tomcat-embed-core-10.1.34.jar,2026-03-12 03:38:10.222598,2026-03-13 02:46:05,,VIRTUAL_MACHINE,,,,,,,,,org.apache.tomcat.embed:tomcat-embed-core,JAVA,,True,0.9420000000000001,Critical,True,5,9.8,Tier 2,2026-03-12 03:38:10.222598,2026-03-13 02:46:05,2026-03-13 02:46:05
+8b74377b-3a60-56d1-b4dd-6b1f233f04bd,,CVE-2025-41232,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/hzero-gateway.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-03-12 03:36:21.321375,2026-03-13 02:46:05,,VIRTUAL_MACHINE,,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 3,2026-03-12 03:36:21.321375,2026-03-13 02:46:05,2026-03-13 02:46:05
+e6d4bc68-03e2-56bd-90c1-b6ec00779b6d,,CVE-2025-41232,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/hzero-oauth.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-03-12 03:38:09.535867,2026-03-13 02:46:02,,VIRTUAL_MACHINE,,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 3,2026-03-12 03:38:09.535867,2026-03-13 02:46:02,2026-03-13 02:46:02
+3e23b941-0abc-53aa-82f6-8861d26f5bfa,,CVE-2025-41232,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/o2-basic-management.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-03-12 03:38:10.000107,2026-03-13 02:46:04,,VIRTUAL_MACHINE,,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 3,2026-03-12 03:38:10.000107,2026-03-13 02:46:04,2026-03-13 02:46:04
+36df33d7-296a-5626-b554-94607d6800e8,,CVE-2025-41232,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/hzero-interface.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-03-12 03:38:11.563360,2026-03-13 02:46:02,,VIRTUAL_MACHINE,,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 3,2026-03-12 03:38:11.563360,2026-03-13 02:46:02,2026-03-13 02:46:02
+88e75413-c717-510a-a6f3-ab49eadeab57,,CVE-2025-41232,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.springframework.security:spring-security-core` version `6.4.2` was detected in `Maven library manager` located at `/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar` and is vulnerable to `CVE-2025-41232`, which exists in versions `>= 6.4.0, < 6.4.6`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-9pp5-9c7g-4r83) with vendor severity: `Critical` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2025-41232) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://attackerkb.com/assessments/c3734c78-c018-4e5f-9c70-b5f3c074a411).
+
+The vulnerability can be remediated by updating the library to version `6.4.6` or higher, using `mvn versions:use-latest-releases -Dincludes=org.springframework.security:spring-security-core`.
+
+The library is associated with the technology `Spring Security`.",/home/ecp-app/CNY/adidas-cny.jar -> BOOT-INF/lib/spring-security-core-6.4.2.jar,2026-03-12 03:37:53.663135,2026-03-13 02:46:04,,VIRTUAL_MACHINE,,,,,,,,,org.springframework.security:spring-security-core,JAVA,,False,0.001,High,True,30,9.1,Tier 3,2026-03-12 03:37:53.663135,2026-03-13 02:46:04,2026-03-13 02:46:04
+ca269e6f-55f0-59f3-8c1b-fb8579bce59b,,CVE-2025-24813,cny-prod-backend-server01,,Open,,False,,,CRITICAL,"The library `org.apache.tomcat.embed:tomcat-embed-core` version `10.1.34` was detected in `Maven library manager` located at `/home/ecp-app/CNY/hzero-register.jar -> BOOT-INF/lib/tomcat-embed-core-10.1.34.jar` and is vulnerable to `CVE-2025-24813`, which exists in versions `>= 10.1.0-M1, < 10.1.35`.
+
+The vulnerability was found in the [Github Security Advisory](https://github.com/advisories/GHSA-83qj-6fr2-vhqg) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2025-24813) severity: `Critical`).
+
+This vulnerability has a known exploit available. Sources: [CISA Known Exploited Vulnerabilities Catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog), [Exploit Database](https://www.exploit-db.com/exploits/52134), Github [[1](https://github.com/absholi7ly/POC-CVE-2025-24813/blob/main/README.md), [2](https://github.com/absholi7ly/POC-CVE-2025-24813)], [VulnCheck](https://raw.githubusercontent.com/rapid7/metasploit-framework/master/modules/exploits/multi/http/tomcat_partial_put_deserialization.rb), [VulnCheck KEV](https://dashboard.shadowserver.org/statistics/honeypot/vulnerability/map/?day=2025-03-14&host_type=src&vulnerability=cve-2025-24813).
+
+The vulnerability can be remediated by updating the library to version `10.1.35` or higher, using `mvn versions:use-latest-releases -Dincludes=org.apache.tomcat.embed:tomcat-embed-core`.
+
+>**Wiz Threat Research note:** 
+>Use our [Host Configuration Rule](https://app.wiz.io/policies/host-configuration-rules#%7E%28filters%7E%28shortName%7E%28equals%7E%28%7E%27whcr-apachetomcat-003%29%29%29%29) in order to identify Apache Tomcat instances allowing Servlet write access.",/home/ecp-app/CNY/hzero-register.jar -> BOOT-INF/lib/tomcat-embed-core-10.1.34.jar,2026-03-12 03:38:10.327117,2026-03-13 02:46:05,,VIRTUAL_MACHINE,,,,,,,,,org.apache.tomcat.embed:tomcat-embed-core,JAVA,,True,0.9420000000000001,Critical,True,5,9.8,Tier 2,2026-03-12 03:38:10.327117,2026-03-13 02:46:05,2026-03-13 02:46:05

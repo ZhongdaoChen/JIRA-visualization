@@ -1,0 +1,15 @@
+finding_id,pos,cve,target,plugin_name,state,severity,exploit_available,cvss3_base_score,cvss_base_score,wiz_severity,description,location_path,wiz_first_found,wiz_last_found,wiz_last_fixed,resource_type,issue_id,comments_summary,ticket_key,port,signature_id,current_incident_uuid,exposure_url,results,wiz_component,wiz_technology,wiz_weighted_severity,exploitable,epssScore,riskRating,leanix_internet_exposed,SLA,cvssScore,Tier,first_found,last_found,last_fixed
+929755db-e8d8-5d9e-a6fe-055034584a1b,,CVE-2022-1996,cny-prod-backend-server07,,Open,,False,,,CRITICAL,"The library `github.com/emicklei/go-restful` version `2.9.5+incompatible` was detected in `Golang binary` located at `/usr/bin/containerd` and is vulnerable to `CVE-2022-1996`, which exists in versions `<2.16.0`.
+
+The vulnerability was found in the [The Go Vulnerability Database](https://nvd.nist.gov/vuln/detail/CVE-2022-1996) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2022-1996) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://huntr.dev/bounties/be837427-415c-4d8c-808b-62ce20aa84f1).
+
+This vulnerability cannot be remediated directly because `github.com/emicklei/go-restful` is installed as part of `containerd.io`. Please consider updating `containerd.io`.",/usr/bin/containerd,2026-01-06 09:37:07.926369,2026-01-16 09:15:04,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,github.com/emicklei/go-restful,GO,,False,0.009000000000000001,High,True,30,9.1,Tier 1,2026-01-06 09:37:07.926369,2026-01-16 09:15:04,2026-01-16 09:15:04
+77f8c4ac-eb9d-5ee9-8efa-234feb4a2eec,,CVE-2022-1996,cny-prod-backend-server07,,Open,,False,,,CRITICAL,"The library `github.com/emicklei/go-restful/v3` version `3.7.3` was detected in `Golang binary` located at `/usr/bin/containerd` and is vulnerable to `CVE-2022-1996`, which exists in versions `>=3.0.0, <3.8.0`.
+
+The vulnerability was found in the [The Go Vulnerability Database](https://nvd.nist.gov/vuln/detail/CVE-2022-1996) with vendor severity: `Critical` ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2022-1996) severity: `Critical`).
+
+This vulnerability has a known exploit available. Source: [VulnCheck](https://huntr.dev/bounties/be837427-415c-4d8c-808b-62ce20aa84f1).
+
+This vulnerability cannot be remediated directly because `github.com/emicklei/go-restful/v3` is installed as part of `containerd.io`. Please consider updating `containerd.io`.",/usr/bin/containerd,2026-01-06 09:37:10.545836,2026-01-16 09:15:04,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,github.com/emicklei/go-restful/v3,GO,,False,0.009000000000000001,High,True,30,9.1,Tier 1,2026-01-06 09:37:10.545836,2026-01-16 09:15:04,2026-01-16 09:15:04
