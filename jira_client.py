@@ -224,12 +224,17 @@ class JiraClient:
 
         对于 JIRA Server/Data Center，使用 {'name': 'email'} 格式
         对于 JIRA Cloud，使用 {'accountId': '...'} 格式
+
+        使用 'add' 操作在现有值基础上添加，不会覆盖已有观众。
         """
-        # 使用 set 操作设置 Additional Viewer
-        # 注意：set 会覆盖现有值，如需添加请使用 add_additional_viewers
+        # 使用 add 操作，在现有值基础上添加
         resp = self._session.put(
             f"{self.config.base_url}rest/api/2/issue/{issue_key}",
-            json={"fields": {"customfield_15000": [{"name": user_identifier}]}},
+            json={
+                "update": {
+                    "customfield_15000": [{"add": {"name": user_identifier}}]
+                }
+            },
             timeout=30,
         )
         try:
