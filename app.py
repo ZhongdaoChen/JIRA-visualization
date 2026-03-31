@@ -694,7 +694,6 @@ def main() -> None:
 
         # 构建带选择列的 DataFrame
         display_columns = [
-            "key",
             "summary",
             "status",
             "assignee",
@@ -715,16 +714,18 @@ def main() -> None:
             # 初始化表格
             display_df = df[display_columns].copy()
             current_selected = st.session_state.get("selected_issue_keys", set())
-            display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in current_selected))
-            # 创建 key_link 列，使用 Markdown 格式显示超链接
-            display_df["key_link"] = display_df["key"].apply(
-                lambda x: f"[{x}]({base_url}browse/{x})"
-            )
+            # 从原始 df 中获取 key 列来创建 Select 列
+            display_df.insert(0, "Select", df["key"].apply(lambda x: x in current_selected))
+            # 保留 key 列用于内部引用（从 df 中获取）
+            display_df.insert(1, "key", df["key"])
+            # 创建 key_url 列存储完整 URL（用于 LinkColumn），插入到 key 列之后
+            display_df.insert(2, "key_url", df["key"].apply(lambda x: f"{base_url}browse/{x}"))
             st.session_state["issue_selector_df"] = display_df
             st.session_state["issue_selector_needs_init"] = False
             st.session_state["issue_selector_init_key"] = st.session_state.get("issue_selector_init_key", 0) + 1
 
         # 使用 data_editor 显示带 checkbox 的表格
+        # key_url 列使用 LinkColumn，显示为短的 key 格式 (GINFOSEC-xxxxx)
         edited_df = st.data_editor(
             st.session_state["issue_selector_df"],
             column_config={
@@ -733,15 +734,18 @@ def main() -> None:
                     default=False,
                     help="勾选要操作的 ticket",
                 ),
-                "key_link": st.column_config.MarkdownColumn(
+                "key": None,  # 隐藏 key 列（只显示 key_url）
+                "key_url": st.column_config.LinkColumn(
                     "key",
                     help="点击链接打开 JIRA issue",
+                    # display_text 使用正则表达式提取 key 部分（GINFOSEC-xxxxx）
+                    display_text=r"https?://[^/]+/browse/([A-Z]+-\d+)",
+                    validate=r"^https?://.+",  # 确保是有效的 URL
                 ),
             },
             use_container_width=True,
             hide_index=True,
             key="issue_selector",
-            disabled=display_columns + ["key_link"],  # 禁用所有列，只允许编辑 Select
             num_rows="fixed",  # 固定行数，避免重新排序
         )
 
@@ -749,7 +753,7 @@ def main() -> None:
         st.session_state["issue_selector_df"] = edited_df
 
         # 从 edited_df 中获取用户选择并保存到 session state
-        new_selected = set(edited_df[edited_df["Select"]]["key_url"].tolist())
+        new_selected = set(edited_df[edited_df["Select"]]["key"].tolist())
         old_selected = st.session_state.get("selected_issue_keys", set())
         if new_selected != old_selected:
             st.session_state["selected_issue_keys"] = new_selected
