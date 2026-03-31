@@ -532,6 +532,9 @@ def main() -> None:
     # 用户选中的 issue keys（通过 checkbox 选择）
     if "selected_issue_keys" not in st.session_state:
         st.session_state["selected_issue_keys"] = set()
+    # 存储 issue selector 的 DataFrame 状态，避免 re-render 时丢失选择
+    if "issue_selector_df" not in st.session_state:
+        st.session_state["issue_selector_df"] = None
 
     # 提前获取 step1_complete 状态，供侧边栏使用
     step1_complete = st.session_state.get("step1_complete", False)
@@ -640,6 +643,8 @@ def main() -> None:
         st.session_state["step1_issues"] = normalize_issues(raw_issues)
         st.session_state["step1_raw_issues"] = raw_issues
         st.session_state["selected_issue_keys"] = set()  # 重置选中状态
+        st.session_state["issue_selector_df"] = None  # 重置表格状态
+        st.session_state["issue_selector_needs_init"] = True  # 标记需要重新初始化
         st.rerun()
 
     # 处理第二步：操作
@@ -667,6 +672,8 @@ def main() -> None:
         st.session_state["step2_operation"] = None
         st.session_state["step2_confirmed"] = False
         st.session_state["selected_issue_keys"] = set()
+        st.session_state["issue_selector_df"] = None
+        st.session_state["issue_selector_needs_init"] = True
         st.rerun()
 
     # 显示第一步的结果
@@ -692,20 +699,25 @@ def main() -> None:
             "labels",
         ]
 
-        # 构建显示 DataFrame，先复制数据
-        display_df = df[display_columns].copy()
-
-        # 获取已选中的 keys
-        current_selected = st.session_state.get("selected_issue_keys", set())
-
-        # 在最左侧插入 Select 列
-        display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in current_selected))
-
         st.markdown("### 搜索结果预览（勾选要操作的 ticket）")
+
+        # 检查是否需要重新初始化表格（新搜索结果或全选/取消操作）
+        init_key = st.session_state.get("issue_selector_init_key", 0)
+        needs_init = st.session_state.get("issue_selector_needs_init", True)
+
+        if needs_init or st.session_state.get("issue_selector_df") is None:
+            # 初始化表格
+            display_df = df[display_columns].copy()
+            current_selected = st.session_state.get("selected_issue_keys", set())
+            display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in current_selected))
+            st.session_state["issue_selector_df"] = display_df
+            st.session_state["issue_selector_needs_init"] = False
+            init_key += 1
+            st.session_state["issue_selector_init_key"] = init_key
 
         # 使用 data_editor 显示带 checkbox 的表格
         edited_df = st.data_editor(
-            display_df,
+            st.session_state["issue_selector_df"],
             column_config={
                 "Select": st.column_config.CheckboxColumn(
                     "选择",
@@ -716,15 +728,23 @@ def main() -> None:
             use_container_width=True,
             hide_index=True,
             key="issue_selector",
-            disabled=[c for c in display_columns],  # 只允许编辑 Select 列
+            disabled=display_columns,  # 只允许编辑 Select 列
+            num_rows="fixed",  # 固定行数，避免重新排序
         )
+
+        # 保存表格状态到 session_state
+        st.session_state["issue_selector_df"] = edited_df
 
         # 从 edited_df 中获取用户选择并保存到 session state
         new_selected = set(edited_df[edited_df["Select"]]["key"].tolist())
-        st.session_state["selected_issue_keys"] = new_selected
+        old_selected = st.session_state.get("selected_issue_keys", set())
+        if new_selected != old_selected:
+            st.session_state["selected_issue_keys"] = new_selected
+            # 强制 re-run 以更新 UI 显示
+            # 但不重新初始化表格，而是复用当前的 edited_df
 
         # 显示选中统计
-        selected_count = len(current_selected)
+        selected_count = len(st.session_state["selected_issue_keys"])
         if selected_count > 0:
             st.success(f"已选中 **{selected_count}** 条 issue")
         else:
@@ -735,10 +755,20 @@ def main() -> None:
         with col_select_all:
             if st.button("全选", key="select_all_button"):
                 st.session_state["selected_issue_keys"] = set(df["key"].tolist())
+                # 更新表格状态
+                display_df = df[display_columns].copy()
+                display_df.insert(0, "Select", True)
+                st.session_state["issue_selector_df"] = display_df
+                st.session_state["issue_selector_needs_init"] = True
                 st.rerun()
         with col_clear:
             if st.button("取消全选", key="clear_selection_button"):
                 st.session_state["selected_issue_keys"] = set()
+                # 更新表格状态
+                display_df = df[display_columns].copy()
+                display_df.insert(0, "Select", False)
+                st.session_state["issue_selector_df"] = display_df
+                st.session_state["issue_selector_needs_init"] = True
                 st.rerun()
 
         # 显示第二步操作输入
