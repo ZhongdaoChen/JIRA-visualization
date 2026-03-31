@@ -529,6 +529,9 @@ def main() -> None:
         st.session_state["step2_operation"] = None
     if "step2_confirmed" not in st.session_state:
         st.session_state["step2_confirmed"] = False
+    # 用户选中的 issue keys（通过 checkbox 选择）
+    if "selected_issue_keys" not in st.session_state:
+        st.session_state["selected_issue_keys"] = set()
 
     # 提前获取 step1_complete 状态，供侧边栏使用
     step1_complete = st.session_state.get("step1_complete", False)
@@ -582,7 +585,7 @@ def main() -> None:
             with col_search:
                 st.button("重新搜索", key="step1_button")
             with col_operate:
-                st.button("执行操作", key="step2_button")
+                st.button("生成操作指令", key="step2_button")
         else:
             st.button("搜索", key="step1_button")
 
@@ -636,6 +639,7 @@ def main() -> None:
         st.session_state["step1_jql"] = jql
         st.session_state["step1_issues"] = normalize_issues(raw_issues)
         st.session_state["step1_raw_issues"] = raw_issues
+        st.session_state["selected_issue_keys"] = set()  # 重置选中状态
         st.rerun()
 
     # 处理第二步：操作
@@ -662,6 +666,7 @@ def main() -> None:
         st.session_state["step1_raw_issues"] = []
         st.session_state["step2_operation"] = None
         st.session_state["step2_confirmed"] = False
+        st.session_state["selected_issue_keys"] = set()
         st.rerun()
 
     # 显示第一步的结果
@@ -674,24 +679,62 @@ def main() -> None:
         st.write(f"共找到 **{len(raw_issues)}** 条 issue")
         st.code(jql, language="sql")
 
-        st.markdown("### 搜索结果预览")
-        st.dataframe(
-            df[
-                [
-                    "key",
-                    "summary",
-                    "status",
-                    "assignee",
-                    "reporter",
-                    "created",
-                    "resolutiondate",
-                    "cycle_time_days",
-                    "labels",
-                ]
-            ],
+        # 构建带选择列的 DataFrame
+        display_columns = [
+            "key",
+            "summary",
+            "status",
+            "assignee",
+            "reporter",
+            "created",
+            "resolutiondate",
+            "cycle_time_days",
+            "labels",
+        ]
+        display_df = df[display_columns].copy()
+
+        # 根据当前选中的 keys 设置 Select 列
+        display_df["Select"] = display_df["key"].apply(lambda x: x in st.session_state["selected_issue_keys"])
+
+        st.markdown("### 搜索结果预览（勾选要操作的 ticket）")
+
+        # 使用 data_editor 显示带 checkbox 的表格
+        edited_df = st.data_editor(
+            display_df,
+            column_config={
+                "Select": st.column_config.CheckboxColumn(
+                    "选择",
+                    default=False,
+                    help="勾选要操作的 ticket",
+                ),
+            },
             use_container_width=True,
             hide_index=True,
+            key="issue_selector",
+            disabled=[c for c in display_columns if c != "Select"],  # 只允许编辑 Select 列
         )
+
+        # 保存用户选择到 session state
+        current_selected = set(edited_df[edited_df["Select"]]["key"].tolist())
+        st.session_state["selected_issue_keys"] = current_selected
+
+        # 显示选中统计
+        selected_count = len(current_selected)
+        if selected_count > 0:
+            st.success(f"已选中 **{selected_count}** 条 issue")
+        else:
+            st.info("请勾选要操作的 ticket，或点击'全选/取消全选'按钮")
+
+        # 全选/取消全选按钮
+        col_select_all, col_clear = st.columns(2)
+        with col_select_all:
+            if st.button("全选", key="select_all_button"):
+                st.session_state["selected_issue_keys"] = set(df["key"].tolist())
+                st.rerun()
+        with col_clear:
+            if st.button("取消全选", key="clear_selection_button"):
+                st.session_state["selected_issue_keys"] = set()
+                st.rerun()
 
         # 显示第二步操作输入
         st.markdown("---")
@@ -704,129 +747,138 @@ def main() -> None:
             fields_to_update = step2_operation.get("fields") or {}
             cmd = step2_operation
 
-            st.write(f"模式：**{mode}**")
+            # 获取用户选中的 issue
+            selected_keys = st.session_state.get("selected_issue_keys", set())
+            selected_raw_issues = [i for i in raw_issues if i.get("key") in selected_keys]
 
-            # 显示操作预览
-            st.markdown("### 操作预览")
+            if not selected_raw_issues:
+                st.warning("没有选中的 issue，请在上表中勾选要操作的 ticket")
+            else:
+                st.write(f"模式：**{mode}**")
+                st.info(f"将对选中的 **{len(selected_raw_issues)}** 条 issue 执行操作")
 
-            # 评论预览
-            if fields_to_update.get("comment"):
-                comment_data = fields_to_update["comment"]
-                st.markdown("### 添加评论 (每 Issue)")
-                st.json({
-                    "method": "POST",
-                    "url": f"{base_url}rest/api/2/issue/xxx/comment",
-                    "body": comment_data
-                })
+                # 显示操作预览
+                st.markdown("### 操作预览")
 
-            # 字段更新预览
-            if fields_to_update:
-                fields_copy = {k: v for k, v in fields_to_update.items() if k != "comment"}
-                if fields_copy:
-                    st.markdown("### 更新字段 (每 Issue)")
+                # 评论预览
+                if fields_to_update.get("comment"):
+                    comment_data = fields_to_update["comment"]
+                    st.markdown("### 添加评论 (每 Issue)")
+                    st.json({
+                        "method": "POST",
+                        "url": f"{base_url}rest/api/2/issue/xxx/comment",
+                        "body": comment_data
+                    })
+
+                # 字段更新预览
+                if fields_to_update:
+                    fields_copy = {k: v for k, v in fields_to_update.items() if k != "comment"}
+                    if fields_copy:
+                        st.markdown("### 更新字段 (每 Issue)")
+                        st.json({
+                            "method": "PUT",
+                            "url": f"{base_url}rest/api/2/issue/xxx",
+                            "body": {"fields": fields_copy}
+                        })
+
+                # Watchers 预览
+                if cmd.get("add_watchers"):
+                    st.markdown("### 添加 Watchers (每 Issue)")
+                    st.json({
+                        "method": "POST",
+                        "url": f"{base_url}rest/api/2/issue/xxx/watchers",
+                        "body": {"name": "<username>"}
+                    })
+
+                # Participants 预览
+                if cmd.get("add_participants"):
+                    st.markdown("### 添加 Additional Viewer (每 Issue)")
                     st.json({
                         "method": "PUT",
                         "url": f"{base_url}rest/api/2/issue/xxx",
-                        "body": {"fields": fields_copy}
+                        "body": {"fields": {"customfield_15000": [{"name": "<email>"}]}}
+                    })
+                    st.caption("Additional Viewer 是一个 custom field (customfield_15000)，支持多用户。")
+
+                # Transition 预览
+                if cmd.get("transition"):
+                    trans = cmd["transition"]
+                    st.markdown("### 状态转换 (每 Issue)")
+                    st.json({
+                        "method": "POST",
+                        "url": f"{base_url}rest/api/2/issue/xxx/transitions",
+                        "body": {
+                            "transition": {"id": "<transition_id>"},
+                            "fields": trans.get("fields", {}),
+                            "update": {"comment": [{"add": {"body": trans.get("comment", "")}}]} if trans.get("comment") else {}
+                        }
                     })
 
-            # Watchers 预览
-            if cmd.get("add_watchers"):
-                st.markdown("### 添加 Watchers (每 Issue)")
-                st.json({
-                    "method": "POST",
-                    "url": f"{base_url}rest/api/2/issue/xxx/watchers",
-                    "body": {"name": "<username>"}
-                })
-
-            # Participants 预览
-            if cmd.get("add_participants"):
-                st.markdown("### 添加 Additional Viewer (每 Issue)")
-                st.json({
-                    "method": "PUT",
-                    "url": f"{base_url}rest/api/2/issue/xxx",
-                    "body": {"fields": {"customfield_15000": [{"name": "<email>"}]}}
-                })
-                st.caption("Additional Viewer 是一个 custom field (customfield_15000)，支持多用户。")
-
-            # Transition 预览
-            if cmd.get("transition"):
-                trans = cmd["transition"]
-                st.markdown("### 状态转换 (每 Issue)")
-                st.json({
-                    "method": "POST",
-                    "url": f"{base_url}rest/api/2/issue/xxx/transitions",
-                    "body": {
-                        "transition": {"id": "<transition_id>"},
-                        "fields": trans.get("fields", {}),
-                        "update": {"comment": [{"add": {"body": trans.get("comment", "")}}]} if trans.get("comment") else {}
-                    }
-                })
-
-            # 附件下载预览
-            if download_attachments:
-                st.markdown("### 下载附件")
-                st.info(f"将下载所有选中 issue 的附件到当前目录下的 `jira_attachments` 文件夹")
-
-            st.warning(f"⚠️ 注意：上述更新操作将对已选中的 {len(raw_issues)} 条 issue 执行。")
-
-            # 确认执行按钮
-            if st.button("确认执行操作"):
-                email_to_user = {}
-                client = JiraClient(JiraConfig(base_url=base_url, pat=pat))
-                success, error = execute_update_operations(client, raw_issues, fields_to_update, cmd, email_to_user)
-                if success:
-                    st.success("操作执行完成！")
-                if error:
-                    st.error(error)
-
-                # 执行附件下载
+                # 附件下载预览
                 if download_attachments:
-                    from datetime import datetime
-                    # 所有附件下载到统一的 jira_attachments 目录
-                    output_dir = os.path.join(os.getcwd(), "jira_attachments")
-                    os.makedirs(output_dir, exist_ok=True)
+                    st.markdown("### 下载附件")
+                    st.info(f"将下载选中 issue 的附件到当前目录下的 `jira_attachments` 文件夹")
 
-                    with st.spinner(f"正在下载附件到 {output_dir} ..."):
-                        all_success = []
-                        all_failed = []
-                        for issue in raw_issues:
-                            key = issue.get("key")
-                            if not key:
-                                continue
-                            try:
-                                result = client.download_issue_attachments(key, output_dir, flatten=True)
-                                all_success.extend(result.get("success", []))
-                                all_failed.extend(result.get("failed", []))
-                            except Exception as e:
-                                all_failed.append({
-                                    "key": key,
-                                    "error": str(e),
-                                })
+                st.warning(f"⚠️ 注意：上述更新操作将对已选中的 {len(selected_raw_issues)} 条 issue 执行。")
 
-                        if all_success:
-                            st.success(f"附件下载成功：{len(all_success)} 个文件，保存到：{output_dir}")
-                            # 显示下载的文件列表
-                            st.markdown("#### 下载的文件列表")
-                            st.json(all_success[:50])  # 只显示前 50 个
-                            if len(all_success) > 50:
-                                st.caption(f"... 还有 {len(all_success) - 50} 个文件")
-                        if all_failed:
-                            st.markdown("#### 下载失败详情")
-                            st.dataframe(all_failed, use_container_width=True, hide_index=True)
+                # 确认执行按钮
+                if st.button("确认执行操作"):
+                    email_to_user = {}
+                    client = JiraClient(JiraConfig(base_url=base_url, pat=pat))
+                    success, error = execute_update_operations(client, selected_raw_issues, fields_to_update, cmd, email_to_user)
+                    if success:
+                        st.success("操作执行完成！")
+                    if error:
+                        st.error(error)
 
-                st.session_state["step2_confirmed"] = True
-                st.rerun()
+                    # 执行附件下载
+                    if download_attachments:
+                        from datetime import datetime
+                        # 所有附件下载到统一的 jira_attachments 目录
+                        output_dir = os.path.join(os.getcwd(), "jira_attachments")
+                        os.makedirs(output_dir, exist_ok=True)
 
-            # 重新搜索按钮
-            if st.button("重新搜索"):
-                st.session_state["step1_complete"] = False
-                st.session_state["step1_jql"] = ""
-                st.session_state["step1_issues"] = []
-                st.session_state["step1_raw_issues"] = []
-                st.session_state["step2_operation"] = None
-                st.session_state["step2_confirmed"] = False
-                st.rerun()
+                        with st.spinner(f"正在下载附件到 {output_dir} ..."):
+                            all_success = []
+                            all_failed = []
+                            for issue in selected_raw_issues:
+                                key = issue.get("key")
+                                if not key:
+                                    continue
+                                try:
+                                    result = client.download_issue_attachments(key, output_dir, flatten=True)
+                                    all_success.extend(result.get("success", []))
+                                    all_failed.extend(result.get("failed", []))
+                                except Exception as e:
+                                    all_failed.append({
+                                        "key": key,
+                                        "error": str(e),
+                                    })
+
+                            if all_success:
+                                st.success(f"附件下载成功：{len(all_success)} 个文件，保存到：{output_dir}")
+                                # 显示下载的文件列表
+                                st.markdown("#### 下载的文件列表")
+                                st.json(all_success[:50])  # 只显示前 50 个
+                                if len(all_success) > 50:
+                                    st.caption(f"... 还有 {len(all_success) - 50} 个文件")
+                            if all_failed:
+                                st.markdown("#### 下载失败详情")
+                                st.dataframe(all_failed, use_container_width=True, hide_index=True)
+
+                    st.session_state["step2_confirmed"] = True
+                    st.rerun()
+
+                # 重新搜索按钮
+                if st.button("重新搜索"):
+                    st.session_state["step1_complete"] = False
+                    st.session_state["step1_jql"] = ""
+                    st.session_state["step1_issues"] = []
+                    st.session_state["step1_raw_issues"] = []
+                    st.session_state["step2_operation"] = None
+                    st.session_state["step2_confirmed"] = False
+                    st.session_state["selected_issue_keys"] = set()
+                    st.rerun()
         else:
             # 等待用户输入第二步操作描述
             st.info("请在上方输入框中描述要对这些 issue 执行的操作，然后点击'执行操作'按钮。")
