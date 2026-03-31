@@ -592,9 +592,11 @@ def main() -> None:
         else:
             st.button("搜索", key="step1_button")
 
-    # 允许用户只输入域名（例如 jira.tools.3stripes.net），这里自动补全协议
+    # 允许用户只输入域名（例如 jira.tools.3stripes.net），这里自动补全协议和末尾斜杠
     if base_url and not base_url.startswith(("http://", "https://")):
         base_url = "https://" + base_url.strip("/")
+    if base_url and not base_url.endswith("/"):
+        base_url += "/"
 
     if not (base_url and pat):
         st.error("请完整填写 JIRA Base URL 和 PAT。")
