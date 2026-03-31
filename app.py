@@ -742,7 +742,7 @@ def main() -> None:
             use_container_width=True,
             hide_index=True,
             key="issue_selector",
-            disabled=["key_url"] + display_columns,  # 只允许编辑 Select 列
+            disabled=display_columns,  # 只允许编辑 Select 列和 key_url 列
             num_rows="fixed",  # 固定行数，避免重新排序
         )
 
