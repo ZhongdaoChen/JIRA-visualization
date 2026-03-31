@@ -695,8 +695,11 @@ def main() -> None:
         # 构建显示 DataFrame，先复制数据
         display_df = df[display_columns].copy()
 
+        # 获取已选中的 keys
+        current_selected = st.session_state.get("selected_issue_keys", set())
+
         # 在最左侧插入 Select 列
-        display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in st.session_state["selected_issue_keys"]))
+        display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in current_selected))
 
         st.markdown("### 搜索结果预览（勾选要操作的 ticket）")
 
@@ -716,9 +719,9 @@ def main() -> None:
             disabled=[c for c in display_columns],  # 只允许编辑 Select 列
         )
 
-        # 保存用户选择到 session state
-        current_selected = set(edited_df[edited_df["Select"]]["key"].tolist())
-        st.session_state["selected_issue_keys"] = current_selected
+        # 从 edited_df 中获取用户选择并保存到 session state
+        new_selected = set(edited_df[edited_df["Select"]]["key"].tolist())
+        st.session_state["selected_issue_keys"] = new_selected
 
         # 显示选中统计
         selected_count = len(current_selected)
