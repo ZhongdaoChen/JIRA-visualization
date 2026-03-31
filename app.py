@@ -714,6 +714,8 @@ def main() -> None:
             display_df = df[display_columns].copy()
             current_selected = st.session_state.get("selected_issue_keys", set())
             display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in current_selected))
+            # 创建 URL 列（隐藏）和显示列
+            display_df["key_url"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
             st.session_state["issue_selector_df"] = display_df
             st.session_state["issue_selector_needs_init"] = False
             st.session_state["issue_selector_init_key"] = st.session_state.get("issue_selector_init_key", 0) + 1
@@ -731,14 +733,14 @@ def main() -> None:
                 "key": st.column_config.LinkColumn(
                     "key",
                     help="点击链接打开 JIRA issue",
-                    validate=r"^GINFOSEC-",  # 验证格式为 GINFOSEC-xxxxx
-                    url=f"{base_url}browse/{{key}}",  # URL 模板，{key} 会被替换为列值
+                    validate=r"^https://",
+                    display_text=r"(GINFOSEC-\d+)",  # 从 URL 中提取 GINFOSEC-xxxxx 显示
                 ),
             },
             use_container_width=True,
             hide_index=True,
             key="issue_selector",
-            disabled=display_columns,  # 只允许编辑 Select 列
+            disabled=["key"] + display_columns,  # 只允许编辑 Select 列
             num_rows="fixed",  # 固定行数，避免重新排序
         )
 
@@ -746,7 +748,7 @@ def main() -> None:
         st.session_state["issue_selector_df"] = edited_df
 
         # 从 edited_df 中获取用户选择并保存到 session state
-        new_selected = set(edited_df[edited_df["Select"]]["key"].tolist())
+        new_selected = set(edited_df[edited_df["Select"]]["key_url"].tolist())
         old_selected = st.session_state.get("selected_issue_keys", set())
         if new_selected != old_selected:
             st.session_state["selected_issue_keys"] = new_selected
@@ -770,7 +772,7 @@ def main() -> None:
                     st.session_state["selected_issue_keys"] = set()
                     display_df = df[display_columns].copy()
                     display_df.insert(0, "Select", False)
-                    display_df["key"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
+                    display_df["key_url"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
                     st.session_state["issue_selector_df"] = display_df
                     st.session_state["issue_selector_needs_init"] = True
                     st.rerun()
@@ -779,7 +781,7 @@ def main() -> None:
                     st.session_state["selected_issue_keys"] = all_keys
                     display_df = df[display_columns].copy()
                     display_df.insert(0, "Select", True)
-                    display_df["key"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
+                    display_df["key_url"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
                     st.session_state["issue_selector_df"] = display_df
                     st.session_state["issue_selector_needs_init"] = True
                     st.rerun()
