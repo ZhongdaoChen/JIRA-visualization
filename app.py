@@ -723,7 +723,7 @@ def main() -> None:
             st.session_state["issue_selector_init_key"] = st.session_state.get("issue_selector_init_key", 0) + 1
 
         # 使用 data_editor 显示带 checkbox 的表格
-        # 为 key 列添加超链接（显示为 GINFOSEC-xxxxx，点击跳转到 JIRA）
+        # 为 key_url 列添加超链接（显示为 GINFOSEC-xxxxx，点击跳转到 JIRA）
         edited_df = st.data_editor(
             st.session_state["issue_selector_df"],
             column_config={
@@ -732,7 +732,7 @@ def main() -> None:
                     default=False,
                     help="勾选要操作的 ticket",
                 ),
-                "key": st.column_config.LinkColumn(
+                "key_url": st.column_config.LinkColumn(
                     "key",
                     help="点击链接打开 JIRA issue",
                     validate=r"^https://",
@@ -742,7 +742,7 @@ def main() -> None:
             use_container_width=True,
             hide_index=True,
             key="issue_selector",
-            disabled=["key"] + display_columns,  # 只允许编辑 Select 列
+            disabled=["key_url"] + display_columns,  # 只允许编辑 Select 列
             num_rows="fixed",  # 固定行数，避免重新排序
         )
 
