@@ -600,6 +600,9 @@ def main() -> None:
         st.error("请完整填写 JIRA Base URL 和 PAT。")
         return
 
+    # 保存 base_url 到 session_state 供后续使用
+    st.session_state["jira_base_url"] = base_url
+
     # 附件下载选项（第一步完成后显示，在主逻辑中定义以便后续使用）
     download_attachments = False
     if step1_complete:
@@ -681,6 +684,7 @@ def main() -> None:
         jql = st.session_state["step1_jql"]
         df = st.session_state["step1_issues"]
         raw_issues = st.session_state["step1_raw_issues"]
+        base_url = st.session_state.get("jira_base_url", base_url)  # 获取 JIRA base URL
 
         st.subheader("第一步：搜索结果")
         st.write(f"共找到 **{len(raw_issues)}** 条 issue")
@@ -710,12 +714,15 @@ def main() -> None:
             display_df = df[display_columns].copy()
             current_selected = st.session_state.get("selected_issue_keys", set())
             display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in current_selected))
+            # 将 key 列转换为超链接 URL
+            display_df["key"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
             st.session_state["issue_selector_df"] = display_df
             st.session_state["issue_selector_needs_init"] = False
             init_key += 1
             st.session_state["issue_selector_init_key"] = init_key
 
         # 使用 data_editor 显示带 checkbox 的表格
+        # 为 key 列添加超链接
         edited_df = st.data_editor(
             st.session_state["issue_selector_df"],
             column_config={
@@ -723,6 +730,11 @@ def main() -> None:
                     "选择",
                     default=False,
                     help="勾选要操作的 ticket",
+                ),
+                "key": st.column_config.LinkColumn(
+                    "key",
+                    help="点击链接打开 JIRA issue",
+                    validate=r"^https://",
                 ),
             },
             use_container_width=True,
@@ -740,36 +752,40 @@ def main() -> None:
         old_selected = st.session_state.get("selected_issue_keys", set())
         if new_selected != old_selected:
             st.session_state["selected_issue_keys"] = new_selected
-            # 强制 re-run 以更新 UI 显示
-            # 但不重新初始化表格，而是复用当前的 edited_df
 
         # 显示选中统计
         selected_count = len(st.session_state["selected_issue_keys"])
         if selected_count > 0:
             st.success(f"已选中 **{selected_count}** 条 issue")
         else:
-            st.info("请勾选要操作的 ticket，或点击'全选/取消全选'按钮")
+            st.info("请勾选要操作的 ticket，或点击'全选'按钮")
 
-        # 全选/取消全选按钮
-        col_select_all, col_clear = st.columns(2)
-        with col_select_all:
-            if st.button("全选", key="select_all_button"):
-                st.session_state["selected_issue_keys"] = set(df["key"].tolist())
-                # 更新表格状态
-                display_df = df[display_columns].copy()
-                display_df.insert(0, "Select", True)
-                st.session_state["issue_selector_df"] = display_df
-                st.session_state["issue_selector_needs_init"] = True
-                st.rerun()
-        with col_clear:
-            if st.button("取消全选", key="clear_selection_button"):
+        # 显示带超链接的 key 列表
+        st.markdown("### 已选中的 issue")
+        selected_keys = sorted(st.session_state["selected_issue_keys"])
+        if selected_keys:
+            # 构建超链接列表
+            links = [f"[{key}]({base_url}browse/{key})" for key in selected_keys]
+            st.markdown(", ".join(links))
+
+        # 全选按钮（切换功能）
+        all_keys = set(df["key"].tolist())
+        is_all_selected = st.session_state["selected_issue_keys"] == all_keys
+
+        if st.button("取消全选" if is_all_selected else "全选", key="select_all_button"):
+            if is_all_selected:
+                # 当前已全选，点击后取消全选
                 st.session_state["selected_issue_keys"] = set()
-                # 更新表格状态
                 display_df = df[display_columns].copy()
                 display_df.insert(0, "Select", False)
-                st.session_state["issue_selector_df"] = display_df
-                st.session_state["issue_selector_needs_init"] = True
-                st.rerun()
+            else:
+                # 当前未全选，点击后全选
+                st.session_state["selected_issue_keys"] = all_keys
+                display_df = df[display_columns].copy()
+                display_df.insert(0, "Select", True)
+            st.session_state["issue_selector_df"] = display_df
+            st.session_state["issue_selector_needs_init"] = True
+            st.rerun()
 
         # 显示第二步操作输入
         st.markdown("---")
