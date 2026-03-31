@@ -714,14 +714,12 @@ def main() -> None:
             display_df = df[display_columns].copy()
             current_selected = st.session_state.get("selected_issue_keys", set())
             display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in current_selected))
-            # 将 key 列转换为超链接 URL（显示为 GINFOSEC-xxxxx，但可点击）
-            display_df["key"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
             st.session_state["issue_selector_df"] = display_df
             st.session_state["issue_selector_needs_init"] = False
             st.session_state["issue_selector_init_key"] = st.session_state.get("issue_selector_init_key", 0) + 1
 
         # 使用 data_editor 显示带 checkbox 的表格
-        # 为 key 列添加超链接
+        # 为 key 列添加超链接（显示为 GINFOSEC-xxxxx，点击跳转到 JIRA）
         edited_df = st.data_editor(
             st.session_state["issue_selector_df"],
             column_config={
@@ -733,7 +731,8 @@ def main() -> None:
                 "key": st.column_config.LinkColumn(
                     "key",
                     help="点击链接打开 JIRA issue",
-                    validate=r"^https://",
+                    validate=r"^GINFOSEC-",  # 验证格式为 GINFOSEC-xxxxx
+                    url=f"{base_url}browse/{{key}}",  # URL 模板，{key} 会被替换为列值
                 ),
             },
             use_container_width=True,
@@ -747,14 +746,7 @@ def main() -> None:
         st.session_state["issue_selector_df"] = edited_df
 
         # 从 edited_df 中获取用户选择并保存到 session state
-        # 注意：edited_df["key"] 现在是 URL，需要提取 key
-        new_selected = set()
-        for _, row in edited_df[edited_df["Select"]].iterrows():
-            url = row["key"]
-            # 从 URL 中提取 key：https://jira.tools.3stripes.net/browse/GINFOSEC-91242 → GINFOSEC-91242
-            key = url.split("/browse/")[-1] if "/browse/" in url else url
-            new_selected.add(key)
-
+        new_selected = set(edited_df[edited_df["Select"]]["key"].tolist())
         old_selected = st.session_state.get("selected_issue_keys", set())
         if new_selected != old_selected:
             st.session_state["selected_issue_keys"] = new_selected
