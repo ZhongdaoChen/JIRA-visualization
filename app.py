@@ -716,14 +716,15 @@ def main() -> None:
             display_df = df[display_columns].copy()
             current_selected = st.session_state.get("selected_issue_keys", set())
             display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in current_selected))
-            # 创建 key_url 列存储完整 URL
-            display_df["key_url"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
+            # 创建 key_link 列，使用 Markdown 格式显示超链接
+            display_df["key_link"] = display_df["key"].apply(
+                lambda x: f"[{x}]({base_url}browse/{x})"
+            )
             st.session_state["issue_selector_df"] = display_df
             st.session_state["issue_selector_needs_init"] = False
             st.session_state["issue_selector_init_key"] = st.session_state.get("issue_selector_init_key", 0) + 1
 
         # 使用 data_editor 显示带 checkbox 的表格
-        # 使用 LinkColumn 显示超链接
         edited_df = st.data_editor(
             st.session_state["issue_selector_df"],
             column_config={
@@ -732,7 +733,7 @@ def main() -> None:
                     default=False,
                     help="勾选要操作的 ticket",
                 ),
-                "key_url": st.column_config.LinkColumn(
+                "key_link": st.column_config.MarkdownColumn(
                     "key",
                     help="点击链接打开 JIRA issue",
                 ),
@@ -740,7 +741,7 @@ def main() -> None:
             use_container_width=True,
             hide_index=True,
             key="issue_selector",
-            disabled=display_columns,  # 只禁用普通列
+            disabled=display_columns + ["key_link"],  # 禁用所有列，只允许编辑 Select
             num_rows="fixed",  # 固定行数，避免重新排序
         )
 
@@ -780,6 +781,12 @@ def main() -> None:
             st.session_state["toggle_counter"] = st.session_state.get("toggle_counter", 0) + 1
             toggle_select_all()
             st.rerun()
+
+        # 从 edited_df 中获取用户选择并保存到 session state
+        new_selected = set(edited_df[edited_df["Select"]]["key"].tolist())
+        old_selected = st.session_state.get("selected_issue_keys", set())
+        if new_selected != old_selected:
+            st.session_state["selected_issue_keys"] = new_selected
 
         # 显示第二步操作输入
         st.markdown("---")
