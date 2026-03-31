@@ -760,31 +760,26 @@ def main() -> None:
         else:
             st.info("请勾选要操作的 ticket，或点击'全选/取消全选'按钮")
 
-        # 全选/取消全选按钮
+        # 全选/取消全选按钮 - 使用回调函数处理
         all_keys = set(df["key"].tolist())
         is_all_selected = st.session_state["selected_issue_keys"] == all_keys
 
-        col1, col2 = st.columns(2)
-        with col1:
-            # 使用不同的 key 区分全选和取消全选
-            if is_all_selected:
-                if st.button("取消全选", key="deselect_all_btn"):
-                    st.session_state["selected_issue_keys"] = set()
-                    display_df = df[display_columns].copy()
-                    display_df.insert(0, "Select", False)
-                    display_df["key_url"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
-                    st.session_state["issue_selector_df"] = display_df
-                    st.session_state["issue_selector_needs_init"] = True
-                    st.rerun()
+        def toggle_select_all():
+            if st.session_state["selected_issue_keys"] == all_keys:
+                # 当前已全选，取消全选
+                st.session_state["selected_issue_keys"] = set()
             else:
-                if st.button("全选", key="select_all_btn"):
-                    st.session_state["selected_issue_keys"] = all_keys
-                    display_df = df[display_columns].copy()
-                    display_df.insert(0, "Select", True)
-                    display_df["key_url"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
-                    st.session_state["issue_selector_df"] = display_df
-                    st.session_state["issue_selector_needs_init"] = True
-                    st.rerun()
+                # 全选
+                st.session_state["selected_issue_keys"] = all_keys
+            # 重置表格初始化标志
+            st.session_state["issue_selector_needs_init"] = True
+
+        # 根据状态显示不同按钮文本，但使用相同的 key
+        button_text = "取消全选" if is_all_selected else "全选"
+        if st.button(button_text, key=f"toggle_select_{st.session_state.get('toggle_counter', 0)}"):
+            st.session_state["toggle_counter"] = st.session_state.get("toggle_counter", 0) + 1
+            toggle_select_all()
+            st.rerun()
 
         # 显示第二步操作输入
         st.markdown("---")
