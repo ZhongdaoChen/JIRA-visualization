@@ -691,10 +691,12 @@ def main() -> None:
             "cycle_time_days",
             "labels",
         ]
+
+        # 构建显示 DataFrame，先复制数据
         display_df = df[display_columns].copy()
 
-        # 根据当前选中的 keys 设置 Select 列
-        display_df["Select"] = display_df["key"].apply(lambda x: x in st.session_state["selected_issue_keys"])
+        # 在最左侧插入 Select 列
+        display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in st.session_state["selected_issue_keys"]))
 
         st.markdown("### 搜索结果预览（勾选要操作的 ticket）")
 
@@ -711,7 +713,7 @@ def main() -> None:
             use_container_width=True,
             hide_index=True,
             key="issue_selector",
-            disabled=[c for c in display_columns if c != "Select"],  # 只允许编辑 Select 列
+            disabled=[c for c in display_columns],  # 只允许编辑 Select 列
         )
 
         # 保存用户选择到 session state
