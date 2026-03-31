@@ -716,14 +716,14 @@ def main() -> None:
             display_df = df[display_columns].copy()
             current_selected = st.session_state.get("selected_issue_keys", set())
             display_df.insert(0, "Select", display_df["key"].apply(lambda x: x in current_selected))
-            # 创建 URL 列（隐藏）和显示列
+            # 创建 key_url 列存储完整 URL
             display_df["key_url"] = display_df["key"].apply(lambda x: f"{base_url}browse/{x}")
             st.session_state["issue_selector_df"] = display_df
             st.session_state["issue_selector_needs_init"] = False
             st.session_state["issue_selector_init_key"] = st.session_state.get("issue_selector_init_key", 0) + 1
 
         # 使用 data_editor 显示带 checkbox 的表格
-        # 为 key_url 列添加超链接（显示为 GINFOSEC-xxxxx，点击跳转到 JIRA）
+        # 使用 LinkColumn 显示超链接
         edited_df = st.data_editor(
             st.session_state["issue_selector_df"],
             column_config={
@@ -735,14 +735,12 @@ def main() -> None:
                 "key_url": st.column_config.LinkColumn(
                     "key",
                     help="点击链接打开 JIRA issue",
-                    validate=r"^https://",
-                    display_text=r"(GINFOSEC-\d+)",  # 从 URL 中提取 GINFOSEC-xxxxx 显示
                 ),
             },
             use_container_width=True,
             hide_index=True,
             key="issue_selector",
-            disabled=display_columns,  # 只允许编辑 Select 列和 key_url 列
+            disabled=display_columns,  # 只禁用普通列
             num_rows="fixed",  # 固定行数，避免重新排序
         )
 
