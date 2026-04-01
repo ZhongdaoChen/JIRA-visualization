@@ -351,6 +351,109 @@ class JiraClient:
                 failed.append({"user_id": user_id, "error": str(e)})
         return {"success": success, "failed": failed}
 
+    def get_issue_link_types(self) -> List[Dict[str, Any]]:
+        """
+        Get all available issue link types.
+        Returns a list of link types, each containing 'id', 'name', 'inward', 'outward'.
+        """
+        resp = self._session.get(
+            f"{self.config.base_url}rest/api/2/issueLinkType",
+            timeout=30,
+        )
+        try:
+            resp.raise_for_status()
+        except HTTPError as exc:
+            raise RuntimeError(
+                f"获取 Issue Link Types 失败：{resp.status_code} {resp.text}"
+            ) from exc
+
+        data = resp.json()
+        return data.get("issueLinkTypes", [])
+
+    def create_issue_link(
+        self,
+        link_type_name: str,
+        inward_issue_key: str,
+        outward_issue_key: str,
+        comment: Optional[str] = None,
+    ) -> None:
+        """
+        Create a link between two issues.
+
+        Args:
+            link_type_name: The name of the link type (e.g., "Relates to", "Blocks", "Testing discovered")
+            inward_issue_key: The issue that will have the inward relationship (e.g., "is blocked by")
+            outward_issue_key: The issue that will have the outward relationship (e.g., "blocks")
+            comment: Optional comment to add to the inward issue
+        """
+        payload: Dict[str, Any] = {
+            "type": {"name": link_type_name},
+            "inwardIssue": {"key": inward_issue_key},
+            "outwardIssue": {"key": outward_issue_key},
+        }
+
+        if comment:
+            payload["comment"] = {
+                "body": comment,
+                "visibility": {
+                    "type": "group",
+                    "value": "jira-users"
+                }
+            }
+
+        resp = self._session.post(
+            f"{self.config.base_url}rest/api/2/issueLink",
+            json=payload,
+            timeout=30,
+        )
+        try:
+            resp.raise_for_status()
+        except HTTPError as exc:
+            raise RuntimeError(
+                f"创建 Issue Link 失败：{resp.status_code} {resp.text}"
+            ) from exc
+
+    def link_issues_to_target(
+        self,
+        source_issue_keys: List[str],
+        target_issue_key: str,
+        link_type_name: str = "Testing discovered",
+        comment: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Link multiple source issues to a single target issue.
+
+        The link direction is: source_issue --[link_type]--> target_issue
+
+        Args:
+            source_issue_keys: List of source issue keys to link
+            target_issue_key: The target issue key to link to
+            link_type_name: The link type name (default: "Testing discovered")
+            comment: Optional comment to add with the link
+
+        Returns:
+            Dict with 'success' and 'failed' lists
+        """
+        success = []
+        failed = []
+
+        for source_key in source_issue_keys:
+            try:
+                self.create_issue_link(
+                    link_type_name=link_type_name,
+                    inward_issue_key=source_key,
+                    outward_issue_key=target_issue_key,
+                    comment=comment,
+                )
+                success.append(source_key)
+            except Exception as e:
+                failed.append({
+                    "key": source_key,
+                    "error": str(e),
+                })
+
+        return {"success": success, "failed": failed}
+
     def get_available_transitions(self, issue_key: str) -> List[Dict[str, Any]]:
         """
         Get available transitions for an issue.

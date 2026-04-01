@@ -168,6 +168,7 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             '  "add_watchers": [...],            // (可选) 要添加的 watcher 用户名/邮箱列表\n'
             '  "add_participants": [...]         // (可选) 要添加的 Additional Viewer (JSM) accountId 列表\n'
             '  "transition": {...},              // (可选) 状态转换配置：{"to": "目标状态名", "fields": {...}, "comment": "转换时的评论"}\n'
+            '  "link_to": "XXX-12345",           // (可选) 目标 issue key，用于将选中的 issue link 到目标 ticket\n'
             "}\n"
             "\n=== fields 字段的正确格式示例 ===\n"
             "1. 添加/更新评论 (comment): {\"comment\": {\"add\": [{\"body\": \"这里是评论内容\"}]}}\n"
@@ -194,6 +195,10 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             "- 转换状态并添加评论：{\"to\": \"Done\", \"comment\": \"已完成修复\"}\n"
             "\n重要提示：\n"
             "- transition 的 \"to\" 字段必须是目标状态的名称（如 \"Closed\", \"Done\", \"In Progress\"）\n"
+            "\n=== link_to 字段示例 ===\n"
+            "- 链接到目标 ticket: {\"link_to\": \"GINFOSEC-94691\"}\n"
+            "- 当用户说'把这些 ticket 都 link 到 xxx'时，使用此字段\n"
+            "- Link Type 固定使用 \"Testing discovered\"\n"
         )
 
     if step == 1:
@@ -263,8 +268,9 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
     has_participants = bool(cmd.get("add_participants"))
     has_transition = bool(cmd.get("transition"))
     has_comments = bool(comments_to_add)
+    has_link = bool(cmd.get("link_to"))
 
-    if not has_fields_update and not has_watchers and not has_participants and not has_transition and not has_comments:
+    if not has_fields_update and not has_watchers and not has_participants and not has_transition and not has_comments and not has_link:
         return False, "没有提供任何更新操作"
 
     # ==============================
@@ -500,6 +506,41 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
             )
             if error_rows:
                 st.markdown("#### 状态转换失败详情")
+                st.dataframe(error_rows, use_container_width=True, hide_index=True)
+
+    # 处理 Issue Link
+    if has_link:
+        target_key = cmd["link_to"]
+        link_type = "Testing discovered"  # 固定的 link type
+
+        with st.spinner(f"正在将 {len(raw_issues)} 条 Issue link 到 {target_key}..."):
+            linked = 0
+            link_failed = 0
+            error_rows = []
+
+            for issue in raw_issues:
+                key = issue.get("key")
+                if not key:
+                    continue
+                try:
+                    client.link_issues_to_target(
+                        source_issue_keys=[key],
+                        target_issue_key=target_key,
+                        link_type_name=link_type,
+                    )
+                    linked += 1
+                except Exception as exc:
+                    link_failed += 1
+                    error_rows.append({
+                        "key": key,
+                        "error": str(exc),
+                    })
+
+            st.success(
+                f"Issue Link：共尝试 {linked + link_failed} 条，成功 {linked} 条，失败 {link_failed} 条。"
+            )
+            if error_rows:
+                st.markdown("#### Issue Link 失败详情")
                 st.dataframe(error_rows, use_container_width=True, hide_index=True)
 
     return True, None
@@ -869,6 +910,21 @@ def main() -> None:
                             "update": {"comment": [{"add": {"body": trans.get("comment", "")}}]} if trans.get("comment") else {}
                         }
                     })
+
+                # Issue Link 预览
+                if cmd.get("link_to"):
+                    target_key = cmd["link_to"]
+                    st.markdown("### Link 到目标 Issue (每 Issue)")
+                    st.json({
+                        "method": "POST",
+                        "url": f"{base_url}rest/api/2/issueLink",
+                        "body": {
+                            "type": {"name": "Testing discovered"},
+                            "inwardIssue": {"key": "<source_issue>"},
+                            "outwardIssue": {"key": target_key}
+                        }
+                    })
+                    st.info(f"选中的 issue 将使用 Link Type **Testing discovered** link 到 **{target_key}**")
 
                 # 附件下载预览
                 if download_attachments:
