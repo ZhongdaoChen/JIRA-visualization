@@ -105,6 +105,7 @@ class JiraClient:
                 "created",
                 "updated",
                 "resolutiondate",
+                "duedate",
                 "assignee",
                 "reporter",
                 "labels",
@@ -156,14 +157,31 @@ class JiraClient:
 
         return issues
 
-    def update_issue(self, issue_key: str, fields: Dict[str, Any]) -> None:
+    def update_issue(
+        self,
+        issue_key: str,
+        fields: Optional[Dict[str, Any]] = None,
+        update: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """
         Update a single issue using JIRA REST API.
-        调用方需要提供符合 /rest/api/2/issue PUT schema 的 fields。
+
+        Args:
+            issue_key: Issue key (e.g., 'PROJ-123')
+            fields: Standard fields update (overwrites values), e.g., {"summary": "new summary"}
+            update: Operations on fields (add/remove), e.g., {"labels": [{"add": "new_label"}]}
+
+        可以单独使用 fields 或 update，或同时使用两者。
         """
+        payload: Dict[str, Any] = {}
+        if fields:
+            payload["fields"] = fields
+        if update:
+            payload["update"] = update
+
         resp = self._session.put(
             f"{self.config.base_url}rest/api/2/issue/{issue_key}",
-            json={"fields": fields},
+            json=payload,
             timeout=30,
         )
         try:

@@ -7,8 +7,9 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from baidu_llm import QwenClient, QwenConfig
-from data_processing import normalize_issues
+from data_processing import normalize_issues, calculate_kpis
 from jira_client import JiraClient, JiraConfig
+from kpi_charts import render_kpi_dashboard
 
 
 load_dotenv()
@@ -174,7 +175,8 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             "1. 添加/更新评论 (comment): {\"comment\": {\"add\": [{\"body\": \"这里是评论内容\"}]}}\n"
             "2. 修改摘要 (summary): {\"summary\": \"新的摘要内容\"}\n"
             "3. 修改描述 (description): {\"description\": \"新的描述内容\"}\n"
-            "4. 修改标签 (labels): {\"labels\": [{\"add\": \"新标签\"}, {\"remove\": \"旧标签\"}]} 或 {\"labels\": [\"label1\", \"label2\"]}\n"
+            "4. 添加标签 (labels): 在原有基础上添加用 {\"labels\": [{\"add\": \"新标签\"}]}；覆盖所有标签用 {\"labels\": [\"label1\", \"label2\"]}\n"
+            "   ⚠️ 注意：labels 必须是数组格式，添加/删除操作时每个操作是数组中的一个对象\n"
             "5. 修改优先级 (priority): {\"priority\": {\"name\": \"High\"}}\n"
             "6. 修改处理人 (assignee): {\"assignee\": {\"accountId\": \"5b10a2844c20165700ede94g\"}}\n"
             "7. 添加 Fix Version: {\"fixVersions\": [{\"add\": [{\"name\": \"v1.0\"}]}]}\n"
@@ -263,14 +265,30 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
         # 从 fields 中移除 comment，避免传给 update_issue
         fields_to_update = {k: v for k, v in fields_to_update.items() if k != "comment"}
 
+    # 处理 labels 字段：如果是 add/remove 格式，需要移动到 update 对象中
+    update_operations = {}
+    if fields_to_update.get("labels"):
+        labels_val = fields_to_update["labels"]
+        # 检查是否是 add/remove 格式
+        if isinstance(labels_val, list) and len(labels_val) > 0:
+            # 格式 1: [{"add": "xxx"}] （数组）
+            if isinstance(labels_val[0], dict) and ("add" in labels_val[0] or "remove" in labels_val[0]):
+                update_operations["labels"] = labels_val
+                fields_to_update = {k: v for k, v in fields_to_update.items() if k != "labels"}
+        elif isinstance(labels_val, dict) and ("add" in labels_val or "remove" in labels_val):
+            # 格式 2: {"add": "xxx"} （对象，转换为数组）
+            update_operations["labels"] = [labels_val]
+            fields_to_update = {k: v for k, v in fields_to_update.items() if k != "labels"}
+
     has_fields_update = bool(fields_to_update)
+    has_update_operations = bool(update_operations)
     has_watchers = bool(cmd.get("add_watchers"))
     has_participants = bool(cmd.get("add_participants"))
     has_transition = bool(cmd.get("transition"))
     has_comments = bool(comments_to_add)
     has_link = bool(cmd.get("link_to"))
 
-    if not has_fields_update and not has_watchers and not has_participants and not has_transition and not has_comments and not has_link:
+    if not has_fields_update and not has_update_operations and not has_watchers and not has_participants and not has_transition and not has_comments and not has_link:
         return False, "没有提供任何更新操作"
 
     # ==============================
@@ -378,7 +396,7 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
             st.dataframe(comment_failed, use_container_width=True, hide_index=True)
 
     # 字段更新
-    if has_fields_update:
+    if has_fields_update or has_update_operations:
         updated = 0
         failed = 0
         error_rows = []
@@ -388,7 +406,7 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
                 if not key:
                     continue
                 try:
-                    client.update_issue(key, fields_to_update)
+                    client.update_issue(key, fields=fields_to_update if has_fields_update else None, update=update_operations if has_update_operations else None)
                     updated += 1
                 except Exception as exc:
                     failed += 1
@@ -548,11 +566,106 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
 
 def main() -> None:
     st.set_page_config(page_title="JIRA 可视化看板", layout="wide")
-    st.title("JIRA 数据可视化看板")
 
-    st.markdown(
-        "在左侧输入 JIRA 连接信息与过滤条件，然后点击 **拉取数据** 生成可视化报表。"
-    )
+    # 翻译字典
+    TRANSLATIONS = {
+        "zh": {
+            "title": "JIRA 数据可视化看板",
+            "jira_config": "🔧 JIRA 配置",
+            "jira_base_url": "JIRA Base URL",
+            "jira_email": "JIRA 账号邮箱",
+            "jira_pat": "JIRA PAT",
+            "token_caption": "Token 不会被持久化，请本地保存",
+            "max_results": "最大结果数",
+            "max_results_help": "每次搜索最多返回的 issue 数量",
+            "nl_filter": "自然语言筛选与更新",
+            "search_desc": "用自然语言描述搜索条件",
+            "search_placeholder": "例如：帮我搜索整个 2025 年 GINFOSEC 项目下，assign 给 Peter.chen2@adidas.com 的 ticket。",
+            "operation_desc": "描述要对选中 issue 执行的操作",
+            "operation_placeholder": "例如：把这些 ticket 都 assign 给 Peter.chen2@adidas.com，或者添加评论说'已完成审查'。",
+            "preset_select": "或选择预生成筛选条件",
+            "preset_placeholder": "请选择...",
+            "search_button": "搜索",
+            "regenerate_button": "重新搜索",
+            "generate_cmd_button": "生成操作指令",
+            "step1_result": "第一步：搜索结果",
+            "step2_desc": "第二步：描述操作",
+            "select_all": "全选",
+            "deselect_all": "取消全选",
+            "selected_count": "已选中 **{count}** 条 issue",
+            "select_prompt": "请勾选要操作的 ticket，或点击'全选/取消全选'按钮",
+            "search_prompt": "请在左侧填写配置后点击 **搜索**。",
+            "execute_button": "确认执行操作",
+            "execute_success": "操作执行完成！",
+            "operation_preview": "操作预览",
+            "no_issues_selected": "没有选中的 issue，请在上表中勾选要操作的 ticket",
+            "operation_info": "将对选中的 **{count}** 条 issue 执行操作",
+            "download_attachments": "下载所有附件",
+            "download_attachments_help": "勾选后将在执行操作时下载选中 issue 的所有附件到本地文件夹",
+            "kpi_button_show": "显示 KPI 图表",
+            "kpi_button_hide": "隐藏 KPI 图表",
+            "kpi_title": "KPI 指标看板",
+            "kpi_total": "总 Issue 数",
+            "kpi_resolved": "已解决数",
+            "kpi_closed": "已关闭数",
+            "kpi_resolution_rate": "解决率",
+            "kpi_avg_cycle": "平均周期",
+            "kpi_median_cycle": "中位数周期",
+            "kpi_min_cycle": "最短周期",
+            "kpi_max_cycle": "最长周期",
+        },
+        "en": {
+            "title": "JIRA Data Visualization Dashboard",
+            "jira_config": "🔧 JIRA Configuration",
+            "jira_base_url": "JIRA Base URL",
+            "jira_email": "JIRA Email",
+            "jira_pat": "JIRA PAT",
+            "token_caption": "Token will not be persisted, please save it locally",
+            "max_results": "Max Results",
+            "max_results_help": "Maximum number of issues to return per search",
+            "nl_filter": "Natural Language Filter & Update",
+            "search_desc": "Describe search conditions in natural language",
+            "search_placeholder": "e.g.: Help me search all tickets in GINFOSEC project in 2025 assigned to Peter.chen2@adidas.com",
+            "operation_desc": "Describe the operation to perform on selected issues",
+            "operation_placeholder": "e.g.: Assign these tickets to Peter.chen2@adidas.com, or add a comment saying 'Review completed'",
+            "preset_select": "Or select a preset filter",
+            "preset_placeholder": "Please select...",
+            "search_button": "Search",
+            "regenerate_button": "Re-search",
+            "generate_cmd_button": "Generate Command",
+            "step1_result": "Step 1: Search Results",
+            "step2_desc": "Step 2: Describe Operation",
+            "select_all": "Select All",
+            "deselect_all": "Deselect All",
+            "selected_count": "Selected **{count}** issues",
+            "select_prompt": "Please select tickets to operate on, or click 'Select All/Deselect All' button",
+            "search_prompt": "Please fill in the configuration on the left and click **Search**.",
+            "execute_button": "Confirm Execute",
+            "execute_success": "Operation completed!",
+            "operation_preview": "Operation Preview",
+            "no_issues_selected": "No issues selected, please check the tickets in the table above",
+            "operation_info": "Will execute operation on **{count}** selected issues",
+            "download_attachments": "Download All Attachments",
+            "download_attachments_help": "Check to download all attachments of selected issues to local folder when executing operations",
+            "kpi_button_show": "Show KPI Charts",
+            "kpi_button_hide": "Hide KPI Charts",
+            "kpi_title": "KPI Dashboard",
+            "kpi_total": "Total Issues",
+            "kpi_resolved": "Resolved",
+            "kpi_closed": "Closed",
+            "kpi_resolution_rate": "Resolution Rate",
+            "kpi_avg_cycle": "Avg Cycle Time",
+            "kpi_median_cycle": "Median Cycle Time",
+            "kpi_min_cycle": "Min Cycle Time",
+            "kpi_max_cycle": "Max Cycle Time",
+        },
+    }
+
+    # 获取当前语言
+    lang = st.session_state.get("language", "zh")
+    t = TRANSLATIONS.get(lang, TRANSLATIONS["zh"])
+
+    st.title(t["title"])
 
     # 初始化会话状态
     if "pending_cmd" not in st.session_state:
@@ -576,62 +689,130 @@ def main() -> None:
     # 存储 issue selector 的 DataFrame 状态，避免 re-render 时丢失选择
     if "issue_selector_df" not in st.session_state:
         st.session_state["issue_selector_df"] = None
+    # 语言设置
+    if "language" not in st.session_state:
+        st.session_state["language"] = "zh"  # zh = 中文，en = English
+    # KPI 图表显示状态
+    if "kpi_charts_visible" not in st.session_state:
+        st.session_state["kpi_charts_visible"] = False
 
     # 提前获取 step1_complete 状态，供侧边栏使用
     step1_complete = st.session_state.get("step1_complete", False)
 
     with st.sidebar:
-        st.header("JIRA 配置")
-        default_base_url = os.getenv(
-            "JIRA_BASE_URL", "https://jira.tools.3stripes.net/"
-        )
-        default_email = os.getenv("JIRA_EMAIL", "peter.chen2@adidas.com")
-        default_pat = os.getenv("JIRA_PAT", "")
+        # 语言切换按钮（JIRA 配置上方，左对齐）
+        lang_label = "English" if lang == "zh" else "中文"
+        if st.button(lang_label, key="lang_toggle", use_container_width=True):
+            st.session_state["language"] = "en" if lang == "zh" else "zh"
+            st.rerun()
 
-        base_url = st.text_input("JIRA Base URL", value=default_base_url)
-        email = st.text_input("JIRA 账号邮箱（仅用于展示，无需参与鉴权）", value=default_email)
-        pat = st.text_input(
-            "JIRA Personal Access Token（PAT）",
-            type="password",
-            value=default_pat,
-        )
+        # 使用 expander 折叠 JIRA 配置（默认收起）
+        with st.expander(t["jira_config"], expanded=False):
+            default_base_url = os.getenv(
+                "JIRA_BASE_URL", "https://jira.tools.3stripes.net/"
+            )
+            default_email = os.getenv("JIRA_EMAIL", "peter.chen2@adidas.com")
+            default_pat = os.getenv("JIRA_PAT", "")
 
-        st.caption("提示：为了安全起见，Token 不会被持久化，请在本地安全保存。")
+            base_url = st.text_input(t["jira_base_url"], value=default_base_url)
+            email = st.text_input(t["jira_email"], value=default_email)
+            pat = st.text_input(
+                t["jira_pat"],
+                type="password",
+                value=default_pat,
+            )
+            st.caption(t["token_caption"])
 
-        st.markdown("---")
-        st.header("自然语言筛选与更新")
+            # 最大结果数下拉菜单
+            max_results_options = [100, 500, 1000, 2000, 5000]
+            max_results = st.selectbox(
+                t["max_results"],
+                options=max_results_options,
+                index=max_results_options.index(1000),
+                help=t["max_results_help"]
+            )
+
+        st.divider()
+
+        st.header(t["nl_filter"])
+
+        # 预生成的两级筛选条件模板
+        PRESET_CATEGORIES = {
+            "Pentest": {
+                "2026 年 Pentest 项目": 'project = "GINFOSEC" AND reporter = "peter.chen2@adidas.com" AND created >= "2026-01-01" AND created <= "2026-12-31" AND summary ~ "Application penetration test"',
+                "2026 年 Pentest - Critical 和 High 漏洞": 'project = "GINFOSEC" AND type = "Defect" AND labels = "ChaiTin_PenTests" AND created >= "2026-01-01" AND created <= "2026-12-31"',
+            },
+            "BugBounty": {
+                "2026 年 BugBounty 漏洞": 'project = "GINFOSEC" AND reporter = "peter.chen2@adidas.com" AND labels = "BugBounty" AND created >= "2026-01-01" AND created <= "2026-12-31"',
+            },
+            "Container Security": {
+                "2026 年 Container Security": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND (labels = "GCA-Issues-Q1-Critical" OR labels = "ContainerSecurityL1.3")',
+            },
+        }
 
         # 第一步：搜索条件输入框（始终显示）
         step1_description = st.text_area(
-            "第一步：用自然语言描述搜索条件",
-            placeholder="例如：帮我搜索整个 2025 年 GINFOSEC 项目下，assign 给 Peter.chen2@adidas.com 的 ticket。",
-            key="step1_description_input"
+            t["search_desc"],
+            placeholder=t["search_placeholder"],
+            key="step1_description_input",
+            height=225,
         )
 
-        # 第二步：操作描述输入框（第一步完成后显示）
+        # ── 两级下拉菜单 ──────────────────────────────────────────
+        # 第一级：选择类别
+        _selected_cat = st.selectbox(
+            t["preset_select"],
+            options=[""] + list(PRESET_CATEGORIES.keys()),
+            index=0,
+            format_func=lambda x: t["preset_placeholder"] if x == "" else x,
+            key="preset_cat_selector",
+        )
+
+        # 第二级：根据第一级动态显示子项
+        if _selected_cat:
+            _sub_options = list(PRESET_CATEGORIES[_selected_cat].keys())
+            _selected_sub = st.selectbox(
+                " ",
+                options=[""] + _sub_options,
+                index=0,
+                format_func=lambda x: "请选择子项..." if x == "" else x,
+                key="preset_sub_selector",
+                label_visibility="collapsed",
+            )
+            if _selected_sub:
+                step1_description = PRESET_CATEGORIES[_selected_cat][_selected_sub]
+
+        # 分割线：分隔第一步搜索和第二步操作
+        if step1_complete:
+            st.divider()
+
+        # 第二步：操作描述输入框（始终显示，但"第二步：描述操作"标题在点击按钮后才显示）
         step2_description = ""
         if step1_complete:
             step2_description = st.text_area(
-                "第二步：描述要对选中 issue 执行的操作",
-                placeholder="例如：把这些 ticket 都 assign 给 Peter.chen2@adidas.com，或者添加评论说'已完成审查'。",
-                key="step2_description_input"
+                t["operation_desc"],
+                placeholder=t["operation_placeholder"],
+                key="step2_description_input",
             )
-
-        use_nl = st.checkbox("使用上面的自然语言描述生成 JQL / 更新指令", value=True)
-
-        max_results = st.number_input(
-            "最大结果数（用于 JQL 查询）", min_value=50, max_value=5000, step=50, value=1000
-        )
 
         # 按钮逻辑：第一步完成后显示两个按钮，否则只显示搜索按钮
         if step1_complete:
             col_search, col_operate = st.columns(2)
             with col_search:
-                st.button("重新搜索", key="step1_button")
+                st.button(t["regenerate_button"], key="step1_button")
             with col_operate:
-                st.button("生成操作指令", key="step2_button")
+                st.button(t["generate_cmd_button"], key="step2_button")
+
+            # 分割线（在按钮下方）
+            st.divider()
+
+            # KPI 图表按钮
+            kpi_button_label = "隐藏 KPI 图表" if st.session_state.get("kpi_charts_visible", False) else "显示 KPI 图表"
+            if st.button(kpi_button_label, key="kpi_toggle_button", use_container_width=True):
+                st.session_state["kpi_charts_visible"] = not st.session_state.get("kpi_charts_visible", False)
+                st.rerun()
         else:
-            st.button("搜索", key="step1_button")
+            st.button(t["search_button"], key="step1_button")
 
     # 允许用户只输入域名（例如 jira.tools.3stripes.net），这里自动补全协议和末尾斜杠
     if base_url and not base_url.startswith(("http://", "https://")):
@@ -651,14 +832,14 @@ def main() -> None:
     if step1_complete:
         with st.sidebar:
             download_attachments = st.checkbox(
-                "下载所有附件",
+                t["download_attachments"],
                 value=False,
-                help="勾选后将在执行操作时下载选中 issue 的所有附件到本地文件夹"
+                help=t["download_attachments_help"]
             )
 
     # 处理第一步：搜索
     if st.session_state.get("step1_button") and not step1_complete:
-        if not (use_nl and step1_description.strip()):
+        if not step1_description.strip():
             st.error("请在文本框中输入搜索条件。")
             return
         try:
@@ -691,16 +872,19 @@ def main() -> None:
         st.session_state["selected_issue_keys"] = set()  # 重置选中状态
         st.session_state["issue_selector_df"] = None  # 重置表格状态
         st.session_state["issue_selector_needs_init"] = True  # 标记需要重新初始化
+        st.session_state["step2_result"] = None  # 清除之前的执行结果
         st.rerun()
 
     # 处理第二步：操作
     if st.session_state.get("step2_button") and step1_complete:
-        if not (use_nl and step2_description.strip()):
+        # 从 session_state 获取输入框的值
+        step2_description_val = st.session_state.get("step2_description_input", "")
+        if not step2_description_val.strip():
             st.error("请在文本框中输入操作描述。")
             return
 
         try:
-            cmd = interpret_nl_command(step2_description.strip(), default_project=None, step=2)
+            cmd = interpret_nl_command(step2_description_val.strip(), default_project=None, step=2)
         except Exception as e:
             st.error(f"解析操作指令失败：{e}")
             return
@@ -729,7 +913,7 @@ def main() -> None:
         raw_issues = st.session_state["step1_raw_issues"]
         base_url = st.session_state.get("jira_base_url", base_url)  # 获取 JIRA base URL
 
-        st.subheader("第一步：搜索结果")
+        st.subheader(t["step1_result"])
         st.write(f"共找到 **{len(raw_issues)}** 条 issue")
         st.code(jql, language="sql")
 
@@ -740,12 +924,13 @@ def main() -> None:
             "assignee",
             "reporter",
             "created",
+            "duedate",
             "resolutiondate",
             "cycle_time_days",
             "labels",
         ]
 
-        st.markdown("### 搜索结果预览（勾选要操作的 ticket）")
+        st.markdown(t["select_prompt"])
 
         # 检查是否需要重新初始化表格（新搜索结果或全选/取消操作）
         init_key = st.session_state.get("issue_selector_init_key", 0)
@@ -802,9 +987,9 @@ def main() -> None:
         # 显示选中统计
         selected_count = len(st.session_state["selected_issue_keys"])
         if selected_count > 0:
-            st.success(f"已选中 **{selected_count}** 条 issue")
+            st.success(t["selected_count"].format(count=selected_count))
         else:
-            st.info("请勾选要操作的 ticket，或点击'全选/取消全选'按钮")
+            st.info(t["select_prompt"])
 
         # 全选/取消全选按钮 - 使用回调函数处理
         all_keys = set(df["key"].tolist())
@@ -821,7 +1006,7 @@ def main() -> None:
             st.session_state["issue_selector_needs_init"] = True
 
         # 根据状态显示不同按钮文本，但使用相同的 key
-        button_text = "取消全选" if is_all_selected else "全选"
+        button_text = t["deselect_all"] if is_all_selected else t["select_all"]
         if st.button(button_text, key=f"toggle_select_{st.session_state.get('toggle_counter', 0)}"):
             st.session_state["toggle_counter"] = st.session_state.get("toggle_counter", 0) + 1
             toggle_select_all()
@@ -833,29 +1018,138 @@ def main() -> None:
         if new_selected != old_selected:
             st.session_state["selected_issue_keys"] = new_selected
 
-        # 显示第二步操作输入
-        st.markdown("---")
-        st.subheader("第二步：描述操作")
+        # ========== KPI 图表区域（在表格下方，第二步上方）==========
+        kpi_charts_visible = st.session_state.get("kpi_charts_visible", False)
 
-        step2_operation = st.session_state.get("step2_operation")
+        if kpi_charts_visible:
+            st.markdown("---")
+            st.subheader(t["kpi_title"])
 
-        if step2_operation:
-            mode = step2_operation.get("mode", "update")
-            fields_to_update = step2_operation.get("fields") or {}
-            cmd = step2_operation
-
-            # 获取用户选中的 issue
+            # 获取选中的 issue 数据
             selected_keys = st.session_state.get("selected_issue_keys", set())
-            selected_raw_issues = [i for i in raw_issues if i.get("key") in selected_keys]
-
-            if not selected_raw_issues:
-                st.warning("没有选中的 issue，请在上表中勾选要操作的 ticket")
+            if selected_keys:
+                selected_df = df[df["key"].isin(selected_keys)].copy()
             else:
-                st.write(f"模式：**{mode}**")
-                st.info(f"将对选中的 **{len(selected_raw_issues)}** 条 issue 执行操作")
+                # 如果没有选中，使用全部结果
+                selected_df = df.copy()
 
-                # 显示操作预览
-                st.markdown("### 操作预览")
+            # 计算 KPI 指标
+            kpi_result = calculate_kpis(selected_df)
+
+            # 显示 KPI 指标卡片（使用 st.metric）
+            kpi_cols = st.columns(4)
+
+            kpi_cols[0].metric(
+                label=t["kpi_total"],
+                value=kpi_result.total_count
+            )
+            kpi_cols[1].metric(
+                label=t["kpi_resolved"],
+                value=kpi_result.resolved_count
+            )
+            kpi_cols[2].metric(
+                label=t["kpi_closed"],
+                value=kpi_result.closed_count
+            )
+            kpi_cols[3].metric(
+                label=t["kpi_resolution_rate"],
+                value=f"{kpi_result.resolution_rate:.1f}%"
+            )
+
+            # 周期指标
+            cycle_cols = st.columns(4)
+            cycle_cols[0].metric(
+                label=t["kpi_avg_cycle"],
+                value=f"{kpi_result.avg_cycle_days:.1f}天" if kpi_result.avg_cycle_days else "N/A"
+            )
+            cycle_cols[1].metric(
+                label=t["kpi_median_cycle"],
+                value=f"{kpi_result.median_cycle_days:.1f}天" if kpi_result.median_cycle_days else "N/A"
+            )
+            cycle_cols[2].metric(
+                label=t["kpi_min_cycle"],
+                value=f"{kpi_result.min_cycle_days:.1f}天" if kpi_result.min_cycle_days else "N/A"
+            )
+            cycle_cols[3].metric(
+                label=t["kpi_max_cycle"],
+                value=f"{kpi_result.max_cycle_days:.1f}天" if kpi_result.max_cycle_days else "N/A"
+            )
+
+            st.markdown("---")
+
+            # 图表区域
+            # 第一行：状态分布 + 周期分布
+            chart_row1 = st.columns(2)
+            with chart_row1[0]:
+                from kpi_charts import create_status_distribution_chart
+                fig_status = create_status_distribution_chart(selected_df)
+                st.plotly_chart(fig_status, use_container_width=True)
+
+            with chart_row1[1]:
+                from kpi_charts import create_cycle_time_distribution_chart
+                fig_cycle = create_cycle_time_distribution_chart(selected_df)
+                st.plotly_chart(fig_cycle, use_container_width=True)
+
+            # 第二行：按 assignee + 按 label
+            chart_row2 = st.columns(2)
+            with chart_row2[0]:
+                from kpi_charts import create_cycle_time_by_assignee_chart
+                fig_assignee = create_cycle_time_by_assignee_chart(selected_df)
+                st.plotly_chart(fig_assignee, use_container_width=True)
+
+            with chart_row2[1]:
+                from kpi_charts import create_cycle_time_by_label_chart
+                fig_label = create_cycle_time_by_label_chart(selected_df)
+                st.plotly_chart(fig_label, use_container_width=True)
+
+            # 第三行：趋势图
+            from kpi_charts import create_trend_chart
+            fig_trend = create_trend_chart(selected_df)
+            st.plotly_chart(fig_trend, use_container_width=True)
+
+            # 提示：基于选中数量
+            if selected_keys and len(selected_keys) < len(df):
+                st.caption(f"注：以上 KPI 基于选中的 {len(selected_keys)} 条 issue（共 {len(df)} 条）")
+            else:
+                st.caption(f"注：以上 KPI 基于全部 {len(df)} 条 issue")
+
+        # ========== KPI 图表区域结束 ==========
+
+        # 显示第二步操作界面（当 KPI 图表显示时隐藏，且只有在生成操作指令后才显示）
+        if not kpi_charts_visible and st.session_state.get("step2_operation"):
+            st.markdown("---")
+            st.subheader(t["step2_desc"])
+
+            step2_operation = st.session_state.get("step2_operation")
+            step2_result = st.session_state.get("step2_result")
+
+            # 如果已经执行过操作，显示结果
+            if step2_result and step2_result.get("operations_executed"):
+                st.markdown("### 执行结果")
+                if step2_result.get("success"):
+                    st.success(t["execute_success"])
+                if step2_result.get("error"):
+                    st.error(step2_result["error"])
+
+                st.info("如需执行新的操作，请重新选择操作描述或重新搜索。")
+
+            if step2_operation:
+                mode = step2_operation.get("mode", "update")
+                fields_to_update = step2_operation.get("fields") or {}
+                cmd = step2_operation
+
+                # 获取用户选中的 issue
+                selected_keys = st.session_state.get("selected_issue_keys", set())
+                selected_raw_issues = [i for i in raw_issues if i.get("key") in selected_keys]
+
+                if not selected_raw_issues:
+                    st.warning(t["no_issues_selected"])
+                else:
+                    st.write(f"模式：**{mode}**")
+                    st.info(t["operation_info"].format(count=len(selected_raw_issues)))
+
+                    # 显示操作预览
+                    st.markdown(t["operation_preview"])
 
                 # 评论预览
                 if fields_to_update.get("comment"):
@@ -934,12 +1228,21 @@ def main() -> None:
                 st.warning(f"⚠️ 注意：上述更新操作将对已选中的 {len(selected_raw_issues)} 条 issue 执行。")
 
                 # 确认执行按钮
-                if st.button("确认执行操作"):
+                if st.button(t["execute_button"]):
                     email_to_user = {}
                     client = JiraClient(JiraConfig(base_url=base_url, pat=pat))
                     success, error = execute_update_operations(client, selected_raw_issues, fields_to_update, cmd, email_to_user)
+
+                    # 保存执行结果到 session_state
+                    result = {
+                        "success": success,
+                        "error": error,
+                        "operations_executed": True,
+                    }
+                    st.session_state["step2_result"] = result
+
                     if success:
-                        st.success("操作执行完成！")
+                        st.success(t["execute_success"])
                     if error:
                         st.error(error)
 
@@ -979,25 +1282,26 @@ def main() -> None:
                                 st.dataframe(all_failed, use_container_width=True, hide_index=True)
 
                     st.session_state["step2_confirmed"] = True
-                    st.rerun()
+                    # 移除 st.rerun()，让结果保留在页面上
 
                 # 重新搜索按钮
-                if st.button("重新搜索"):
+                if st.button(t["regenerate_button"]):
                     st.session_state["step1_complete"] = False
                     st.session_state["step1_jql"] = ""
                     st.session_state["step1_issues"] = []
                     st.session_state["step1_raw_issues"] = []
                     st.session_state["step2_operation"] = None
                     st.session_state["step2_confirmed"] = False
+                    st.session_state["step2_result"] = None  # 清除执行结果
                     st.session_state["selected_issue_keys"] = set()
                     st.rerun()
-        else:
-            # 等待用户输入第二步操作描述
-            st.info("请在上方输入框中描述要对这些 issue 执行的操作，然后点击'执行操作'按钮。")
+            else:
+                # 等待用户输入第二步操作描述
+                st.info("请在上方输入框中描述要对这些 issue 执行的操作，然后点击'执行操作'按钮。")
 
     else:
         # 第一步尚未完成，显示初始提示
-        st.info("请在左侧填写配置后点击 **搜索**。")
+        st.info(t["search_prompt"])
         return
 
 

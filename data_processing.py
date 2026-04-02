@@ -14,6 +14,7 @@ class IssueRecord:
     created: Optional[pd.Timestamp]
     updated: Optional[pd.Timestamp]
     resolutiondate: Optional[pd.Timestamp]
+    duedate: Optional[pd.Timestamp]
     assignee: Optional[str]
     reporter: Optional[str]
     labels: List[str]
@@ -31,9 +32,10 @@ def normalize_issues(raw_issues: List[Dict[str, Any]]) -> pd.DataFrame:
             key=issue.get("key", ""),
             summary=fields.get("summary", "") or "",
             status=(fields.get("status") or {}).get("name", "") or "",
-            created=_safe_parse_ts(fields.get("created")),
-            updated=_safe_parse_ts(fields.get("updated")),
-            resolutiondate=_safe_parse_ts(fields.get("resolutiondate")),
+            created=_safe_parse_date(fields.get("created")),
+            updated=_safe_parse_date(fields.get("updated")),
+            resolutiondate=_safe_parse_date(fields.get("resolutiondate")),
+            duedate=_safe_parse_date(fields.get("duedate")),
             assignee=(assignee or {}).get("displayName") if assignee else None,
             reporter=(reporter or {}).get("displayName") if reporter else None,
             labels=labels,
@@ -49,6 +51,7 @@ def normalize_issues(raw_issues: List[Dict[str, Any]]) -> pd.DataFrame:
                 "created",
                 "updated",
                 "resolutiondate",
+                "duedate",
                 "assignee",
                 "reporter",
                 "labels",
@@ -57,34 +60,102 @@ def normalize_issues(raw_issues: List[Dict[str, Any]]) -> pd.DataFrame:
 
     df = pd.DataFrame([r.__dict__ for r in records])
 
-    # 确保时间列为统一的无时区 datetime，避免 tz-aware / tz-naive 混用导致报错
-    for col in ["created", "updated", "resolutiondate"]:
+    # 所有时间列统一转换为 date 类型（只保留日期部分）
+    for col in ["created", "updated", "resolutiondate", "duedate"]:
         if col in df.columns:
-            series = pd.to_datetime(df[col], errors="coerce", utc=True)
-            # 去掉时区信息，统一为本地无时区时间
-            df[col] = series.dt.tz_convert(None)
+            df[col] = pd.to_datetime(df[col], errors="coerce").dt.date
 
     if "created" in df.columns:
-        df["created_date"] = df["created"].dt.date
+        df["created_date"] = df["created"]
     else:
         df["created_date"] = pd.NaT
 
     if "resolutiondate" in df.columns:
-        df["resolved_date"] = df["resolutiondate"].dt.date
+        df["resolved_date"] = df["resolutiondate"]
+        # cycle_time_days 只保留整数天数（向下取整）
         df["cycle_time_days"] = (
-            (df["resolutiondate"] - df["created"]).dt.total_seconds() / 86400
+            (pd.to_datetime(df["resolutiondate"]) - pd.to_datetime(df["created"]))
+            .dt.total_seconds()
+            .apply(lambda x: int(x // 86400) if pd.notna(x) else None)
         )
     else:
         df["resolved_date"] = pd.NaT
-        df["cycle_time_days"] = pd.NA
+        df["cycle_time_days"] = None
 
     return df
 
 
-def _safe_parse_ts(value: Any) -> Optional[pd.Timestamp]:
+def _safe_parse_date(value: Any) -> Optional[pd.Timestamp]:
+    """Parse date/datetime value and return date only (no time component)."""
     if not value:
         return None
     try:
-        return pd.to_datetime(value)
+        return pd.to_datetime(value).date()
     except Exception:
         return None
+
+
+@dataclass
+class KPIResult:
+    """KPI 指标计算结果"""
+    total_count: int  # 总 issue 数
+    resolved_count: int  # 已解决数
+    closed_count: int  # 已关闭数
+    resolution_rate: float  # 解决率 (0-100)
+    avg_cycle_days: Optional[float]  # 平均解决周期
+    median_cycle_days: Optional[float]  # 中位数解决周期
+    min_cycle_days: Optional[float]  # 最短周期
+    max_cycle_days: Optional[float]  # 最长周期
+
+
+def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult:
+    """
+    根据选中的 issue 计算 KPI 指标
+
+    Args:
+        df: 包含 issue 数据的 DataFrame（已包含 cycle_time_days 列）
+        status_column: 状态列名
+
+    Returns:
+        KPIResult 包含所有计算好的指标
+    """
+    total_count = len(df)
+
+    # 已解决：有 resolutiondate 的
+    resolved_count = df["resolutiondate"].notna().sum() if "resolutiondate" in df.columns else 0
+
+    # 已关闭：status 为 Closed/Done/Resolved 等
+    closed_statuses = {"closed", "done", "resolved", "已关闭", "已完成", "已解决"}
+    closed_count = 0
+    if status_column in df.columns:
+        closed_count = df[status_column].apply(
+            lambda x: str(x).lower() in closed_statuses if x else False
+        ).sum()
+
+    # 解决率
+    resolution_rate = (resolved_count / total_count * 100) if total_count > 0 else 0.0
+
+    # 周期统计（只针对已解决的 issue）
+    cycle_days = df.get("cycle_time_days")
+    if cycle_days is not None:
+        cycle_days_valid = cycle_days.dropna()
+        if len(cycle_days_valid) > 0:
+            avg_cycle_days = float(cycle_days_valid.mean())
+            median_cycle_days = float(cycle_days_valid.median())
+            min_cycle_days = float(cycle_days_valid.min())
+            max_cycle_days = float(cycle_days_valid.max())
+        else:
+            avg_cycle_days = median_cycle_days = min_cycle_days = max_cycle_days = None
+    else:
+        avg_cycle_days = median_cycle_days = min_cycle_days = max_cycle_days = None
+
+    return KPIResult(
+        total_count=total_count,
+        resolved_count=resolved_count,
+        closed_count=closed_count,
+        resolution_rate=resolution_rate,
+        avg_cycle_days=avg_cycle_days,
+        median_cycle_days=median_cycle_days,
+        min_cycle_days=min_cycle_days,
+        max_cycle_days=max_cycle_days,
+    )
