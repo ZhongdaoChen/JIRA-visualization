@@ -153,6 +153,13 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             "时间范围请转换为 created 字段的 >= 和 <= 形式，使用具体日期（如 2026-01-01），不要使用 +、- 等相对日期符号。\n"
             "JQL 中的值如果包含特殊字符（如 +、空格等），必须用双引号包裹。\n"
             "当 reporter 或 assignee 使用邮箱或用户名（例如包含 @ 的值）时，JQL 中必须使用双引号包裹。\n"
+            "\n=== issueLink 查询（重要）===\n"
+            "当用户说「查找和 X 有关的所有 tickets」、「与 X 相关联的 tickets」、「X 的 linked issues」等表达时，\n"
+            "使用 JIRA 的 linkedIssues() JQL 函数，格式如下：\n"
+            '  issue in linkedIssues("TICKET-KEY", "Testing discovered")\n'
+            "例如：用户说「查找和 GINFOSEC-123 有关的所有 tickets」，JQL 为：\n"
+            '  issue in linkedIssues("GINFOSEC-123", "Testing discovered")\n'
+            "注意：不要额外加 project 条件，因为 linkedIssues() 已经确定了范围。\n"
         )
     else:
         # 第二步：只生成操作指令（不包含 JQL）
