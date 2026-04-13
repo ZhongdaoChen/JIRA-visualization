@@ -597,16 +597,14 @@ class JiraClient:
         self,
         issue_key: str,
         link_type_name: str = "Testing discovered",
-    ) -> List[str]:
+    ) -> tuple:
         """
         获取一个 ticket 通过指定 link type 关联的所有 ticket keys（双向）。
-
-        Args:
-            issue_key: 目标 ticket key，例如 "GINFOSEC-123"
-            link_type_name: link type 名称，默认 "Testing discovered"
+        匹配时大小写不敏感，同时检查 type.name / type.inward / type.outward。
 
         Returns:
-            关联的 ticket key 列表（去重）
+            (linked_keys: List[str], all_link_type_names: List[str])
+            第二个返回值用于调试，包含该 ticket 上所有实际存在的 link type 名称
         """
         resp = self._session.get(
             f"{self.config.base_url}rest/api/2/issue/{issue_key}",
@@ -623,19 +621,36 @@ class JiraClient:
         data = resp.json()
         issuelinks = data.get("fields", {}).get("issuelinks", [])
 
+        target_lower = link_type_name.lower()
         keys: List[str] = []
+        seen_types: List[str] = []
+
         for link in issuelinks:
-            link_type = (link.get("type") or {}).get("name", "")
-            if link_type != link_type_name:
+            t = link.get("type") or {}
+            type_name = t.get("name", "")
+            inward = t.get("inward", "")
+            outward = t.get("outward", "")
+
+            # 收集所有 type 名称供调试
+            label = f"{type_name} (inward: {inward}, outward: {outward})"
+            if label not in seen_types:
+                seen_types.append(label)
+
+            # 大小写不敏感匹配 name / inward / outward
+            matched = any(
+                target_lower in s.lower()
+                for s in [type_name, inward, outward]
+            )
+            if not matched:
                 continue
-            # 双向都检查
+
             for direction in ("inwardIssue", "outwardIssue"):
                 linked = link.get(direction)
                 if linked and linked.get("key"):
                     keys.append(linked["key"])
 
-        # 去重并排除自身
-        return list({k for k in keys if k != issue_key})
+        linked_keys = list({k for k in keys if k != issue_key})
+        return linked_keys, seen_types
 
     def get_issue_attachments(self, issue_key: str) -> List[Dict[str, Any]]:
         """

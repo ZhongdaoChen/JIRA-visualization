@@ -1204,11 +1204,13 @@ def main() -> None:
                 # 收集所有 linked keys（去重）
                 all_linked_keys: set = set()
                 errors = []
+                debug_types: dict = {}  # key → seen link types（调试用）
                 with st.spinner("第二步：正在获取关联 tickets..."):
                     for key in source_keys:
                         try:
-                            linked = client.get_linked_issue_keys(key, link_type_name="Testing discovered")
+                            linked, seen_types = client.get_linked_issue_keys(key, link_type_name="Testing discovered")
                             all_linked_keys.update(linked)
+                            debug_types[key] = seen_types
                         except Exception as e:
                             errors.append(f"{key}: {e}")
 
@@ -1216,7 +1218,15 @@ def main() -> None:
                     st.warning(f"部分 ticket 获取 links 失败：{'; '.join(errors)}")
 
                 if not all_linked_keys:
+                    # 显示实际的 link types 帮助诊断
                     st.warning("未找到任何通过 Testing discovered 关联的 tickets。")
+                    if debug_types:
+                        with st.expander("🔍 调试：源 ticket 实际包含的 link types"):
+                            for k, types in debug_types.items():
+                                if types:
+                                    st.write(f"**{k}**：{', '.join(types)}")
+                                else:
+                                    st.write(f"**{k}**：（无任何 issue links）")
                     return
 
                 # 批量查询 linked tickets
