@@ -1530,8 +1530,8 @@ def main() -> None:
             except Exception as _e:
                 st.error(f"图表服务未启动或请求失败：{_e}\n\n请先运行：`python chart_server.py`")
 
-            if selected_keys and len(selected_keys) < len(df):
-                st.caption(f"注：以上 KPI 基于选中的 {len(selected_keys)} 条 issue（共 {len(df)} 条）")
+            if snapshot_keys and len(snapshot_keys) < len(df):
+                st.caption(f"注：以上 KPI 基于选中的 {len(snapshot_keys)} 条 issue（共 {len(df)} 条）")
             else:
                 st.caption(f"注：以上 KPI 基于全部 {len(df)} 条 issue")
 
