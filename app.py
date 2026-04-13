@@ -118,6 +118,17 @@ def sanitize_jql(jql: str) -> str:
     return jql
 
 
+def enforce_project(jql: str, project: str = "GINFOSEC") -> str:
+    """
+    确保 JQL 中包含指定 project 条件。
+    若 JQL 已包含 project = 或 project in，则不重复添加。
+    """
+    import re
+    if re.search(r'\bproject\s*[=i]', jql, re.IGNORECASE):
+        return jql
+    return f'project = "{project}" AND {jql}'
+
+
 def interpret_nl_command(description: str, default_project: Optional[str], step: int = 1) -> dict:
     """
     使用阿里云 Qwen（DashScope）将自然语言描述转换为 JQL 或操作指令。
@@ -150,18 +161,19 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             '  "jql": "...",          // 一条完整的 JQL，用于选中 issue\n'
             '  "resolve_links": true  // (可选) 若为 true，先用 jql 找到 ticket，再返回这些 ticket 通过 Testing discovered 关联的所有 tickets\n'
             "}\n"
-            "如果没有指定 project，而给出了默认项目 key，则使用 project = <默认项目> 作为条件之一。\n"
+            "无论用户是否指定 project，JQL 中**必须始终包含** project = \"GINFOSEC\" 作为第一个条件。\n"
             "时间范围请转换为 created 字段的 >= 和 <= 形式，使用具体日期（如 2026-01-01），不要使用 +、- 等相对日期符号。\n"
             "JQL 中的值如果包含特殊字符（如 +、空格等），必须用双引号包裹。\n"
             "当 reporter 或 assignee 使用邮箱或用户名（例如包含 @ 的值）时，JQL 中必须使用双引号包裹。\n"
             "\n=== resolve_links 使用规则（重要）===\n"
             "当用户的意图是：先通过 title/summary 等条件找到某些 tickets，再找这些 tickets 的关联 tickets（linked issues）时，\n"
             "必须同时输出 jql（用于找到中间 ticket）和 resolve_links: true。\n"
+            "resolve_links 场景下的 jql 同样必须包含 project = \"GINFOSEC\"。\n"
             "例如：\n"
             '  用户说「查找和 title 含有 "xxx" 的 ticket 有关的所有 tickets」\n'
-            '  → {"mode": "query", "jql": "summary ~ \\"xxx\\"", "resolve_links": true}\n'
+            '  → {"mode": "query", "jql": "project = \\"GINFOSEC\\" AND summary ~ \\"xxx\\"", "resolve_links": true}\n'
             '  用户说「找到和 GINFOSEC-123 linked 的所有 tickets」\n'
-            '  → {"mode": "query", "jql": "key = \\"GINFOSEC-123\\"", "resolve_links": true}\n'
+            '  → {"mode": "query", "jql": "project = \\"GINFOSEC\\" AND key = \\"GINFOSEC-123\\"", "resolve_links": true}\n'
             "注意：resolve_links 的场景下，jql 是用来找到「源 ticket」的，最终结果是源 ticket 的所有 Testing discovered 关联 tickets。\n"
         )
     else:
@@ -1179,13 +1191,14 @@ def main() -> None:
             st.error("请在文本框中输入搜索条件。")
             return
         try:
-            cmd = interpret_nl_command(step1_description.strip(), default_project=None, step=1)
+            cmd = interpret_nl_command(step1_description.strip(), default_project="GINFOSEC", step=1)
         except Exception as e:
             st.error(f"解析搜索条件失败：{e}")
             return
 
         jql = cmd.get("jql", "")
         jql = sanitize_jql(jql)
+        jql = enforce_project(jql)  # 兜底：确保始终在 GINFOSEC project 下查询
         resolve_links = cmd.get("resolve_links", False)
 
         # 执行搜索
