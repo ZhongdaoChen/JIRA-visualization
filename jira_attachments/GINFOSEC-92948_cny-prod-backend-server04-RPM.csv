@@ -1,8 +1,0 @@
-finding_id,pos,cve,target,plugin_name,state,severity,exploit_available,cvss3_base_score,cvss_base_score,wiz_severity,description,location_path,wiz_first_found,wiz_last_found,wiz_last_fixed,resource_type,issue_id,comments_summary,ticket_key,port,signature_id,current_incident_uuid,exposure_url,results,wiz_component,wiz_technology,wiz_weighted_severity,exploitable,epssScore,riskRating,leanix_internet_exposed,SLA,cvssScore,Tier,first_found,last_found,last_fixed
-3e68398f-d017-558b-92e3-a4d8b2ca50db,,CVE-2026-25646,cny-prod-backend-server04,,Open,,False,,,HIGH,"The package `libpng` version `2:1.6.34-5.el8` was detected in `YUM/DNF package manager` on a machine running `CentOS 8.2.2004` is vulnerable to `CVE-2026-25646`, which exists in `all current versions`.
-
-The vulnerability was found in the [Official RedHat Security Advisories](https://access.redhat.com/security/cve/CVE-2026-25646) with vendor severity: `High` (awaiting NVD analysis, [CNA](https://nvd.nist.gov/vuln/detail/CVE-2026-25646) severity: `High`).
-
-This vulnerability has a known exploit available. Source: [VulnCheck](https://github.com/pnggroup/libpng/security/advisories/GHSA-g8hp-mq4h-rqm3).
-
-This vulnerability cannot be remediated because a fix has not been released.",,2026-02-12 00:51:02.054677,2026-02-18 07:46:20,,VIRTUAL_MACHINE,646b9a1b-ef45-4f0f-987c-277043ec242e,,,,,,,,libpng,RPM,,False,0.001,Medium,True,90,8.3,Tier 3,2026-02-12 00:51:02.054677,2026-02-18 07:46:20,2026-02-18 07:46:20

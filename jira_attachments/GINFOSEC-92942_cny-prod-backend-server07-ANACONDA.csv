@@ -1,8 +1,0 @@
-finding_id,pos,cve,target,plugin_name,state,severity,exploit_available,cvss3_base_score,cvss_base_score,wiz_severity,description,location_path,wiz_first_found,wiz_last_found,wiz_last_fixed,resource_type,issue_id,comments_summary,ticket_key,port,signature_id,current_incident_uuid,exposure_url,results,wiz_component,wiz_technology,wiz_weighted_severity,exploitable,epssScore,riskRating,leanix_internet_exposed,SLA,cvssScore,Tier,first_found,last_found,last_fixed
-a095d50e-081e-5d8a-98c6-f6faa5d60b17,,CVE-2025-15467,cny-prod-backend-server07,,Open,,False,,,CRITICAL,"The library `openssl` version `3.0.18` was detected in `Anaconda package manager` located at `/root/miniconda3/envs/py39/conda-meta/openssl-3.0.18-hd6dcaed_0.json` and is vulnerable to `CVE-2025-15467`, which exists in versions `>= 3.0.0, < 3.0.19`.
-
-The vulnerability was found in the [National Vulnerability Database (NVD)](https://nvd.nist.gov/vuln/detail/CVE-2025-15467) with vendor severity: `Critical`.
-
-This vulnerability has a known exploit available. Source: [VulnCheck](https://github.com/balgan/CVE-2025-15467).
-
-The vulnerability can be remediated by updating the library to version `3.0.19` or higher, using `conda update openssl`.",/root/miniconda3/envs/py39/conda-meta/openssl-3.0.18-hd6dcaed_0.json,2026-02-05 09:47:17.956562,2026-02-18 07:47:22,,VIRTUAL_MACHINE,f5a9d461-94b6-4249-b0d7-2827d16d54a7,,,,,,,,openssl,ANACONDA,,False,0.006999999999999999,High,True,30,9.8,Tier 1,2026-02-05 09:47:17.956562,2026-02-18 07:47:22,2026-02-18 07:47:22
