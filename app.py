@@ -146,20 +146,23 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             "=== 第一步：搜索模式 ===\n"
             "JSON 结构如下：\n"
             "{\n"
-            '  "mode": "query",  // 固定为 query\n'
-            '  "jql": "..."      // 一条完整的 JQL，用于选中 issue\n'
+            '  "mode": "query",       // 固定为 query\n'
+            '  "jql": "...",          // 一条完整的 JQL，用于选中 issue\n'
+            '  "resolve_links": true  // (可选) 若为 true，先用 jql 找到 ticket，再返回这些 ticket 通过 Testing discovered 关联的所有 tickets\n'
             "}\n"
             "如果没有指定 project，而给出了默认项目 key，则使用 project = <默认项目> 作为条件之一。\n"
             "时间范围请转换为 created 字段的 >= 和 <= 形式，使用具体日期（如 2026-01-01），不要使用 +、- 等相对日期符号。\n"
             "JQL 中的值如果包含特殊字符（如 +、空格等），必须用双引号包裹。\n"
             "当 reporter 或 assignee 使用邮箱或用户名（例如包含 @ 的值）时，JQL 中必须使用双引号包裹。\n"
-            "\n=== issueLink 查询（重要）===\n"
-            "当用户说「查找和 X 有关的所有 tickets」、「与 X 相关联的 tickets」、「X 的 linked issues」等表达时，\n"
-            "使用 JIRA 的 linkedIssues() JQL 函数，格式如下：\n"
-            '  issue in linkedIssues("TICKET-KEY", "Testing discovered")\n'
-            "例如：用户说「查找和 GINFOSEC-123 有关的所有 tickets」，JQL 为：\n"
-            '  issue in linkedIssues("GINFOSEC-123", "Testing discovered")\n'
-            "注意：不要额外加 project 条件，因为 linkedIssues() 已经确定了范围。\n"
+            "\n=== resolve_links 使用规则（重要）===\n"
+            "当用户的意图是：先通过 title/summary 等条件找到某些 tickets，再找这些 tickets 的关联 tickets（linked issues）时，\n"
+            "必须同时输出 jql（用于找到中间 ticket）和 resolve_links: true。\n"
+            "例如：\n"
+            '  用户说「查找和 title 含有 "xxx" 的 ticket 有关的所有 tickets」\n'
+            '  → {"mode": "query", "jql": "summary ~ \\"xxx\\"", "resolve_links": true}\n'
+            '  用户说「找到和 GINFOSEC-123 linked 的所有 tickets」\n'
+            '  → {"mode": "query", "jql": "key = \\"GINFOSEC-123\\"", "resolve_links": true}\n'
+            "注意：resolve_links 的场景下，jql 是用来找到「源 ticket」的，最终结果是源 ticket 的所有 Testing discovered 关联 tickets。\n"
         )
     else:
         # 第二步：只生成操作指令（不包含 JQL）
@@ -1181,12 +1184,51 @@ def main() -> None:
 
         jql = cmd.get("jql", "")
         jql = sanitize_jql(jql)
+        resolve_links = cmd.get("resolve_links", False)
 
         # 执行搜索
         try:
             client = JiraClient(JiraConfig(base_url=base_url, pat=pat))
-            with st.spinner("从 JIRA 拉取数据中，请稍候..."):
-                raw_issues = client.search_issues(jql=jql, max_results=max_results)
+            if resolve_links:
+                # 多步处理：先找到源 tickets，再找它们的 linked tickets
+                with st.spinner("第一步：正在查找源 tickets..."):
+                    source_issues = client.search_issues(jql=jql, max_results=max_results)
+
+                if not source_issues:
+                    st.warning("第一步未找到任何 ticket，请调整条件重试。")
+                    return
+
+                source_keys = [i["key"] for i in source_issues]
+                st.info(f"找到 {len(source_keys)} 个源 ticket：{', '.join(source_keys[:5])}{'...' if len(source_keys) > 5 else ''}，正在获取关联 tickets...")
+
+                # 收集所有 linked keys（去重）
+                all_linked_keys: set = set()
+                errors = []
+                with st.spinner("第二步：正在获取关联 tickets..."):
+                    for key in source_keys:
+                        try:
+                            linked = client.get_linked_issue_keys(key, link_type_name="Testing discovered")
+                            all_linked_keys.update(linked)
+                        except Exception as e:
+                            errors.append(f"{key}: {e}")
+
+                if errors:
+                    st.warning(f"部分 ticket 获取 links 失败：{'; '.join(errors)}")
+
+                if not all_linked_keys:
+                    st.warning("未找到任何通过 Testing discovered 关联的 tickets。")
+                    return
+
+                # 批量查询 linked tickets
+                keys_jql = "key in (" + ", ".join(f'"{k}"' for k in sorted(all_linked_keys)) + ")"
+                with st.spinner(f"第三步：正在拉取 {len(all_linked_keys)} 个关联 tickets..."):
+                    raw_issues = client.search_issues(jql=keys_jql, max_results=len(all_linked_keys) + 10)
+
+                # 用实际执行的 JQL 和来源信息记录
+                jql = f"/* 源: {jql} → resolve_links */ {keys_jql}"
+            else:
+                with st.spinner("从 JIRA 拉取数据中，请稍候..."):
+                    raw_issues = client.search_issues(jql=jql, max_results=max_results)
         except Exception as e:
             st.error(f"拉取数据失败：{e}")
             return
