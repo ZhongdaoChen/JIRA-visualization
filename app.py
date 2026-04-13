@@ -185,11 +185,11 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             "10. 自定义字段 (customfield_xxxxx): {\"customfield_10010\": \"值\"} 或 {\"customfield_10010\": {\"value\": \"选项值\"}}\n"
             "\n重要提示：\n"
             "- comment 字段使用嵌套结构：{\"comment\": {\"add\": [{\"body\": \"评论内容\"}]}}\n"
-            "- 用户相关字段 (assignee) 使用 accountId，格式：{\"assignee\": {\"accountId\": \"xxx\"}}\n"
+            "- 用户相关字段 (assignee, reporter) 使用 name，格式：{\"assignee\": {\"name\": \"邮箱或用户名\"}}, {\"reporter\": {\"name\": \"邮箱或用户名\"}}\n"
             "- 选项类字段 (priority, severity 等) 格式：{\"priority\": {\"name\": \"High\"}}\n"
             "- 数组类字段 (labels, versions, components 等) 使用 add/remove 操作或直接赋值数组\n"
             "- status 字段不能直接更新，需要通过工作流转换 (transition)，不要将其包含在 fields 中\n"
-            "- reporter、created、updated、id、key、status 字段不能通过 API 直接更新，不要将其包含在 fields 中\n"
+            "- created、updated、id、key 字段不能通过 API 直接更新，不要将其包含在 fields 中\n"
             "\n=== transition 状态转换示例 ===\n"
             "- 关闭 issue: {\"to\": \"Closed\"}\n"
             "- 解决 issue: {\"to\": \"Resolved\", \"fields\": {\"resolution\": {\"name\": \"Fixed\"}}}\n"
@@ -310,6 +310,17 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
             if "name" in assignee_val and "@" in str(assignee_val.get("name", "")):
                 emails_to_resolve.add(assignee_val["name"])
 
+    # 检查 reporter 中的邮箱
+    if fields_to_update.get("reporter"):
+        reporter_val = fields_to_update["reporter"]
+        if isinstance(reporter_val, str) and "@" in reporter_val:
+            emails_to_resolve.add(reporter_val)
+        elif isinstance(reporter_val, dict):
+            for key in ("accountId", "name"):
+                v = reporter_val.get(key, "")
+                if v and "@" in str(v):
+                    emails_to_resolve.add(v)
+
     # 检查 watchers 中的邮箱
     if has_watchers:
         for w in cmd["add_watchers"]:
@@ -352,6 +363,23 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
 
         if resolved_name:
             fields_to_update["assignee"] = {"name": resolved_name}
+
+    # 修正 reporter - 使用从 API 获取的 name 字段（完整邮箱格式）
+    if fields_to_update.get("reporter"):
+        reporter_val = fields_to_update["reporter"]
+        resolved_reporter = None
+
+        if isinstance(reporter_val, str) and "@" in reporter_val:
+            resolved_reporter = email_to_user.get(reporter_val, {}).get("name") or reporter_val
+        elif isinstance(reporter_val, dict):
+            val_to_resolve = reporter_val.get("accountId") or reporter_val.get("name")
+            if val_to_resolve and "@" in str(val_to_resolve):
+                resolved_reporter = email_to_user.get(val_to_resolve, {}).get("name") or val_to_resolve
+            else:
+                resolved_reporter = val_to_resolve
+
+        if resolved_reporter:
+            fields_to_update["reporter"] = {"name": resolved_reporter}
 
     # 修正 participants - 使用 name（兼容 JIRA Server）
     if has_participants:
@@ -564,6 +592,272 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
     return True, None
 
 
+def create_appsec_service_pie_chart(df: pd.DataFrame):
+    """
+    按服务类型分类的饼图。悬停时显示数量、占比及该类别的 ticket 列表。
+    分类规则（互斥，按优先级）：
+      1. SAST:              reporter == Shervin.Aghdaei@adidas.com
+                            AND assignee in (Jesse.Zhang / Du.Chen / Kiba.Yang /
+                            John.Fu / Zone.Tian / David.Wei / Spencer.Shao /
+                            Laura.Yuan / Jane.Lu / Newman.Xu)
+      2. Pentest:           labels 含 ChaiTin_PenTests
+      3. BugBounty:         labels 含 BugBounty
+      4. Container Security:labels 含 GCA-Issues-Q1-Critical / ContainerSecurity / ContainerSecurityL1.3
+      5. DAST:              labels 含 DAST
+      6. Ad-hoc:            labels 为空且不属于 SAST
+      7. Other:             有标签但不匹配以上任一类别
+    """
+    import plotly.graph_objects as go
+
+    SAST_REPORTER = "shervin.aghdaei@adidas.com"
+    SAST_ASSIGNEES = {
+        "jesse.zhang@adidas.com", "du.chen@adidas.com", "kiba.yang@adidas.com",
+        "john.fu@adidas.com", "zone.tian@adidas.com", "david.wei@adidas.com",
+        "spencer.shao@adidas.com", "laura.yuan@adidas.com", "jane.lu@adidas.com",
+        "newman.xu@adidas.com",
+    }
+    PENTEST_TAGS = {"ChaiTin_PenTests"}
+    BUGBOUNTY_TAGS = {"BugBounty"}
+    CONTAINER_TAGS = {"GCA-Issues-Q1-Critical", "ContainerSecurity", "ContainerSecurityL1.3"}
+    DAST_TAGS = {"DAST"}
+
+    CATEGORY_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Ad-hoc", "Other"]
+    tickets = {c: [] for c in CATEGORY_ORDER}
+
+    for _, row in df.iterrows():
+        raw_labels = row.get("labels") or []
+        label_set = set(raw_labels) if isinstance(raw_labels, list) else set()
+        reporter = str(row.get("reporter_name") or row.get("reporter") or "").lower()
+        assignee = str(row.get("assignee_name") or row.get("assignee") or "").lower()
+        key = str(row.get("key") or "")
+
+        if reporter == SAST_REPORTER and assignee in SAST_ASSIGNEES:
+            tickets["SAST"].append(key)
+        elif label_set & PENTEST_TAGS:
+            tickets["Pentest"].append(key)
+        elif label_set & BUGBOUNTY_TAGS:
+            tickets["BugBounty"].append(key)
+        elif label_set & CONTAINER_TAGS:
+            tickets["Container Security"].append(key)
+        elif label_set & DAST_TAGS:
+            tickets["DAST"].append(key)
+        elif not label_set:
+            tickets["Ad-hoc"].append(key)
+        else:
+            tickets["Other"].append(key)
+
+    active_cats = [c for c in CATEGORY_ORDER if tickets[c]]
+    values_list = [len(tickets[c]) for c in active_cats]
+
+    MAX_DISPLAY = 15
+
+    def _format_tickets(keys):
+        lines = keys[:MAX_DISPLAY]
+        text = "<br>".join(lines)
+        if len(keys) > MAX_DISPLAY:
+            text += f"<br>...以及另外 {len(keys) - MAX_DISPLAY} 条"
+        return text
+
+    customdata = [_format_tickets(tickets[c]) for c in active_cats]
+
+    palette = ["#a78bfa", "#6366f1", "#38bdf8", "#4ade80", "#f59e0b", "#fb923c", "#94a3b8"]
+
+    fig = go.Figure(go.Pie(
+        labels=active_cats,
+        values=values_list,
+        hole=0.4,
+        textinfo="label+value",
+        textposition="auto",
+        marker=dict(colors=palette[:len(active_cats)]),
+        customdata=customdata,
+        hovertemplate=(
+            "<b>%{label}</b><br>"
+            "数量：%{value}  占比：%{percent}<br>"
+            "─────────────────<br>"
+            "%{customdata}<extra></extra>"
+        ),
+    ))
+    fig.update_layout(
+        title="服务类型分布",
+        height=450,
+        margin=dict(l=40, r=160, t=60, b=40),
+        legend=dict(orientation="v", x=1.02, y=0.5),
+    )
+    return fig
+
+
+def create_appsec_status_chart(df: pd.DataFrame):
+    """
+    按修复状态分类的饼图（Open / Accepted / Closed / Reopen）。
+    悬停时显示数量、占比及该状态下的 ticket 列表。
+    """
+    import plotly.graph_objects as go
+
+    TARGET_STATUSES = ["Open", "Accepted", "Closed", "Reopen"]
+    tickets = {s: [] for s in TARGET_STATUSES}
+    tickets["Other"] = []
+
+    for _, row in df.iterrows():
+        val_lower = str(row.get("status") or "").lower()
+        key = str(row.get("key") or "")
+        matched = False
+        for s in TARGET_STATUSES:
+            if s.lower() in val_lower:
+                tickets[s].append(key)
+                matched = True
+                break
+        if not matched:
+            tickets["Other"].append(key)
+
+    active = [s for s in TARGET_STATUSES + ["Other"] if tickets[s]]
+    values_list = [len(tickets[s]) for s in active]
+
+    MAX_DISPLAY = 15
+
+    def _format_tickets(keys):
+        lines = keys[:MAX_DISPLAY]
+        text = "<br>".join(lines)
+        if len(keys) > MAX_DISPLAY:
+            text += f"<br>...以及另外 {len(keys) - MAX_DISPLAY} 条"
+        return text
+
+    customdata = [_format_tickets(tickets[s]) for s in active]
+
+    palette = ["#38bdf8", "#4ade80", "#94a3b8", "#f87171", "#fb923c"]
+
+    fig = go.Figure(go.Pie(
+        labels=active,
+        values=values_list,
+        hole=0.4,
+        textinfo="label+value",
+        textposition="auto",
+        marker=dict(colors=palette[:len(active)]),
+        customdata=customdata,
+        hovertemplate=(
+            "<b>%{label}</b><br>"
+            "数量：%{value}  占比：%{percent}<br>"
+            "─────────────────<br>"
+            "%{customdata}<extra></extra>"
+        ),
+    ))
+    fig.update_layout(
+        title="修复状态分布（Open / Accepted / Closed / Reopen）",
+        height=450,
+        margin=dict(l=40, r=160, t=60, b=40),
+        legend=dict(orientation="v", x=1.02, y=0.5),
+    )
+    return fig
+
+
+def create_appsec_service_bar_chart(df: pd.DataFrame):
+    """
+    按 AppSec 服务类型的柱状图（堆叠：已修复 vs 未修复），柱顶显示修复率。
+    分类规则（互斥，按优先级）：
+      1. SAST:              reporter == Shervin.Aghdaei@adidas.com
+                            AND assignee in (Jesse.Zhang / Du.Chen / Kiba.Yang /
+                            John.Fu / Zone.Tian / David.Wei / Spencer.Shao /
+                            Laura.Yuan / Jane.Lu / Newman.Xu)
+      2. Pentest:           labels 含 ChaiTin_PenTests
+      3. BugBounty:         labels 含 BugBounty
+      4. Container Security:labels 含 GCA-Issues-Q1-Critical / ContainerSecurity / ContainerSecurityL1.3
+      5. DAST:              labels 含 DAST
+      6. Ad-hoc:            labels 为空且不属于 SAST
+      7. Other:             有标签但不匹配以上任一类别
+    """
+    import plotly.graph_objects as go
+
+    SAST_REPORTER = "shervin.aghdaei@adidas.com"
+    SAST_ASSIGNEES = {
+        "jesse.zhang@adidas.com", "du.chen@adidas.com", "kiba.yang@adidas.com",
+        "john.fu@adidas.com", "zone.tian@adidas.com", "david.wei@adidas.com",
+        "spencer.shao@adidas.com", "laura.yuan@adidas.com", "jane.lu@adidas.com",
+        "newman.xu@adidas.com",
+    }
+    PENTEST_TAGS = {"ChaiTin_PenTests"}
+    BUGBOUNTY_TAGS = {"BugBounty"}
+    CONTAINER_TAGS = {"GCA-Issues-Q1-Critical", "ContainerSecurity", "ContainerSecurityL1.3"}
+    DAST_TAGS = {"DAST"}
+
+    CATEGORIES = ["Pentest", "BugBounty", "Container Security", "DAST", "SAST", "Ad-hoc", "Other"]
+    total = {c: 0 for c in CATEGORIES}
+    resolved = {c: 0 for c in CATEGORIES}
+
+    def is_resolved(row):
+        return pd.notna(row.get("resolutiondate")) and row.get("resolutiondate") is not None
+
+    for _, row in df.iterrows():
+        raw_labels = row.get("labels") or []
+        label_set = set(raw_labels) if isinstance(raw_labels, list) else set()
+        reporter = str(row.get("reporter_name") or row.get("reporter") or "").lower()
+        assignee = str(row.get("assignee_name") or row.get("assignee") or "").lower()
+
+        # 分类（优先级顺序）
+        if reporter == SAST_REPORTER and assignee in SAST_ASSIGNEES:
+            cat = "SAST"
+        elif label_set & PENTEST_TAGS:
+            cat = "Pentest"
+        elif label_set & BUGBOUNTY_TAGS:
+            cat = "BugBounty"
+        elif label_set & CONTAINER_TAGS:
+            cat = "Container Security"
+        elif label_set & DAST_TAGS:
+            cat = "DAST"
+        elif not label_set:
+            cat = "Ad-hoc"
+        else:
+            cat = "Other"
+
+        total[cat] += 1
+        if is_resolved(row):
+            resolved[cat] += 1
+
+    # 只保留有数据的类别，按预设顺序排列
+    active_cats = [c for c in CATEGORIES if total[c] > 0]
+    total_vals = [total[c] for c in active_cats]
+    resolved_vals = [resolved[c] for c in active_cats]
+    unresolved_vals = [total[c] - resolved[c] for c in active_cats]
+    rate_labels = [
+        f"{resolved[c] / total[c] * 100:.0f}%" if total[c] > 0 else "0%"
+        for c in active_cats
+    ]
+
+    fig = go.Figure()
+
+    # 已修复（绿色，底层）
+    fig.add_trace(go.Bar(
+        name="已修复",
+        x=active_cats,
+        y=resolved_vals,
+        marker_color="#4ade80",
+        hovertemplate="<b>%{x}</b><br>已修复：%{y}<extra></extra>",
+    ))
+
+    # 未修复（灰色，上层）
+    fig.add_trace(go.Bar(
+        name="未修复",
+        x=active_cats,
+        y=unresolved_vals,
+        marker_color="#64748b",
+        hovertemplate="<b>%{x}</b><br>未修复：%{y}<extra></extra>",
+        text=rate_labels,
+        textposition="outside",
+        textfont=dict(size=13, color="#f8fafc"),
+    ))
+
+    fig.update_layout(
+        title="各服务 Ticket 数量与修复率",
+        xaxis_title="AppSec 服务",
+        yaxis_title="Ticket 数量",
+        barmode="stack",
+        height=450,
+        margin=dict(l=40, r=40, t=80, b=40),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        plot_bgcolor="rgba(0,0,0,0)",
+        yaxis=dict(gridcolor="rgba(255,255,255,0.1)"),
+    )
+    return fig
+
+
 def main() -> None:
     st.set_page_config(page_title="JIRA 可视化看板", layout="wide")
 
@@ -738,6 +1032,10 @@ def main() -> None:
 
         # 预生成的两级筛选条件模板
         PRESET_CATEGORIES = {
+            "AppSec服务概览": {
+                "AppSec所有service情况": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND ((reporter in ("peter.chen2@adidas.com", "hanzi.liu@externals.adidas.com", "Leon.Wang@externals.adidas.com") AND summary !~ "Application penetration test") OR (reporter = "Shervin.Aghdaei@adidas.com" AND assignee in ("Jesse.Zhang@adidas.com", "Du.Chen@adidas.com", "Kiba.Yang@adidas.com", "kiba.Yang@adidas.com", "John.Fu@adidas.com", "Zone.Tian@adidas.com", "David.Wei@adidas.com", "Spencer.Shao@adidas.com", "Laura.Yuan@adidas.com", "Jane.Lu@adidas.com", "Newman.Xu@adidas.com"))) ORDER BY created DESC',
+                "AppSec所有High和Critical tickets": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND (reporter = "peter.chen2@adidas.com" OR reporter = "hanzi.liu@externals.adidas.com" OR reporter = "Leon.Wang@externals.adidas.com") AND summary !~ "Application penetration test" AND priority in ("High", "Critical") ORDER BY created DESC',
+            },
             "Pentest": {
                 "2026 年 Pentest 项目": 'project = "GINFOSEC" AND reporter = "peter.chen2@adidas.com" AND created >= "2026-01-01" AND created <= "2026-12-31" AND summary ~ "Application penetration test"',
                 "2026 年 Pentest - Critical 和 High 漏洞": 'project = "GINFOSEC" AND type = "Defect" AND labels = "ChaiTin_PenTests" AND created >= "2026-01-01" AND created <= "2026-12-31"',
@@ -747,6 +1045,9 @@ def main() -> None:
             },
             "Container Security": {
                 "2026 年 Container Security": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND (labels = "GCA-Issues-Q1-Critical" OR labels = "ContainerSecurityL1.3")',
+            },
+            "SAST": {
+                "SAST": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND reporter = "Shervin.Aghdaei@adidas.com" AND assignee in ("Jesse.Zhang@adidas.com", "Du.Chen@adidas.com", "Kiba.Yang@adidas.com", "kiba.Yang@adidas.com", "John.Fu@adidas.com", "Zone.Tian@adidas.com", "David.Wei@adidas.com", "Spencer.Shao@adidas.com", "Laura.Yuan@adidas.com", "Jane.Lu@adidas.com", "Newman.Xu@adidas.com") ORDER BY created DESC',
             },
         }
 
@@ -759,20 +1060,43 @@ def main() -> None:
         )
 
         # ── 两级下拉菜单 ──────────────────────────────────────────
+        # 自定义 CSS：下拉菜单文字不省略
+        st.markdown("""
+        <style>
+        /* 已选中项显示区域：不省略 */
+        div[data-testid="stSidebar"] div[data-baseweb="select"] [class*="singleValue"],
+        div[data-testid="stSidebar"] div[data-baseweb="select"] [class*="placeholder"],
+        div[data-testid="stSidebar"] div[data-baseweb="select"] span {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+            word-break: break-word !important;
+        }
+        /* 下拉列表选项：不省略 */
+        div[data-baseweb="popover"] li span,
+        div[data-baseweb="popover"] [role="option"] * {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+            word-break: break-word !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         # 第一级：选择类别
         _selected_cat = st.selectbox(
             t["preset_select"],
             options=[""] + list(PRESET_CATEGORIES.keys()),
             index=0,
-            format_func=lambda x: t["preset_placeholder"] if x == "" else x,
+            format_func=lambda x: "📂  请选择类别..." if x == "" else f"📁  {x}",
             key="preset_cat_selector",
         )
 
-        # 第二级：根据第一级动态显示子项
+        # 第二级：根据第一级动态显示子项（带视觉缩进）
         if _selected_cat:
             _sub_options = list(PRESET_CATEGORIES[_selected_cat].keys())
             _selected_sub = st.selectbox(
-                " ",
+                "sub",
                 options=[""] + _sub_options,
                 index=0,
                 format_func=lambda x: "请选择子项..." if x == "" else x,
@@ -873,6 +1197,9 @@ def main() -> None:
         st.session_state["issue_selector_df"] = None  # 重置表格状态
         st.session_state["issue_selector_needs_init"] = True  # 标记需要重新初始化
         st.session_state["step2_result"] = None  # 清除之前的执行结果
+        # 保存当前激活的预设条件（用于条件渲染专属图表）
+        st.session_state["current_preset_cat"] = st.session_state.get("preset_cat_selector", "")
+        st.session_state["current_preset_sub"] = st.session_state.get("preset_sub_selector", "")
         st.rerun()
 
     # 处理第二步：操作
@@ -904,6 +1231,8 @@ def main() -> None:
         st.session_state["selected_issue_keys"] = set()
         st.session_state["issue_selector_df"] = None
         st.session_state["issue_selector_needs_init"] = True
+        st.session_state.pop("preset_cat_selector", None)
+        st.session_state.pop("preset_sub_selector", None)
         st.rerun()
 
     # 显示第一步的结果
@@ -1030,7 +1359,6 @@ def main() -> None:
             if selected_keys:
                 selected_df = df[df["key"].isin(selected_keys)].copy()
             else:
-                # 如果没有选中，使用全部结果
                 selected_df = df.copy()
 
             # 计算 KPI 指标
@@ -1038,76 +1366,63 @@ def main() -> None:
 
             # 显示 KPI 指标卡片（使用 st.metric）
             kpi_cols = st.columns(4)
+            kpi_cols[0].metric(label=t["kpi_total"], value=kpi_result.total_count)
+            kpi_cols[1].metric(label=t["kpi_resolved"], value=kpi_result.resolved_count)
+            kpi_cols[2].metric(label=t["kpi_closed"], value=kpi_result.closed_count)
+            kpi_cols[3].metric(label=t["kpi_resolution_rate"], value=f"{kpi_result.resolution_rate:.1f}%")
 
-            kpi_cols[0].metric(
-                label=t["kpi_total"],
-                value=kpi_result.total_count
-            )
-            kpi_cols[1].metric(
-                label=t["kpi_resolved"],
-                value=kpi_result.resolved_count
-            )
-            kpi_cols[2].metric(
-                label=t["kpi_closed"],
-                value=kpi_result.closed_count
-            )
-            kpi_cols[3].metric(
-                label=t["kpi_resolution_rate"],
-                value=f"{kpi_result.resolution_rate:.1f}%"
-            )
-
-            # 周期指标
             cycle_cols = st.columns(4)
-            cycle_cols[0].metric(
-                label=t["kpi_avg_cycle"],
-                value=f"{kpi_result.avg_cycle_days:.1f}天" if kpi_result.avg_cycle_days else "N/A"
-            )
-            cycle_cols[1].metric(
-                label=t["kpi_median_cycle"],
-                value=f"{kpi_result.median_cycle_days:.1f}天" if kpi_result.median_cycle_days else "N/A"
-            )
-            cycle_cols[2].metric(
-                label=t["kpi_min_cycle"],
-                value=f"{kpi_result.min_cycle_days:.1f}天" if kpi_result.min_cycle_days else "N/A"
-            )
-            cycle_cols[3].metric(
-                label=t["kpi_max_cycle"],
-                value=f"{kpi_result.max_cycle_days:.1f}天" if kpi_result.max_cycle_days else "N/A"
-            )
+            cycle_cols[0].metric(label=t["kpi_avg_cycle"], value=f"{kpi_result.avg_cycle_days:.1f}天" if kpi_result.avg_cycle_days else "N/A")
+            cycle_cols[1].metric(label=t["kpi_median_cycle"], value=f"{kpi_result.median_cycle_days:.1f}天" if kpi_result.median_cycle_days else "N/A")
+            cycle_cols[2].metric(label=t["kpi_min_cycle"], value=f"{kpi_result.min_cycle_days:.1f}天" if kpi_result.min_cycle_days else "N/A")
+            cycle_cols[3].metric(label=t["kpi_max_cycle"], value=f"{kpi_result.max_cycle_days:.1f}天" if kpi_result.max_cycle_days else "N/A")
 
             st.markdown("---")
 
-            # 图表区域
-            # 第一行：状态分布 + 周期分布
-            chart_row1 = st.columns(2)
-            with chart_row1[0]:
-                from kpi_charts import create_status_distribution_chart
-                fig_status = create_status_distribution_chart(selected_df)
-                st.plotly_chart(fig_status, use_container_width=True)
+            # ── AppSec 服务类型分布（仅在对应预设下显示，作为第一个图表）──
+            if (
+                st.session_state.get("current_preset_cat") == "AppSec服务概览"
+                and st.session_state.get("current_preset_sub") == "AppSec所有service情况"
+            ):
+                st.subheader("AppSec 服务类型分布")
+                col1, col2 = st.columns(2)
+                with col1:
+                    appsec_pie = create_appsec_service_pie_chart(selected_df)
+                    st.plotly_chart(appsec_pie, use_container_width=True)
+                with col2:
+                    status_pie = create_appsec_status_chart(selected_df)
+                    st.plotly_chart(status_pie, use_container_width=True)
+                service_bar = create_appsec_service_bar_chart(selected_df)
+                st.plotly_chart(service_bar, use_container_width=True)
+                st.markdown("---")
 
-            with chart_row1[1]:
-                from kpi_charts import create_cycle_time_distribution_chart
-                fig_cycle = create_cycle_time_distribution_chart(selected_df)
-                st.plotly_chart(fig_cycle, use_container_width=True)
+            # ── 调用 Flask 图表服务渲染 ECharts ──────────────────────────
+            import requests as _req
+            import streamlit.components.v1 as _cv1
 
-            # 第二行：按 assignee + 按 label
-            chart_row2 = st.columns(2)
-            with chart_row2[0]:
-                from kpi_charts import create_cycle_time_by_assignee_chart
-                fig_assignee = create_cycle_time_by_assignee_chart(selected_df)
-                st.plotly_chart(fig_assignee, use_container_width=True)
+            CHART_SERVER = "http://127.0.0.1:5050"
 
-            with chart_row2[1]:
-                from kpi_charts import create_cycle_time_by_label_chart
-                fig_label = create_cycle_time_by_label_chart(selected_df)
-                st.plotly_chart(fig_label, use_container_width=True)
+            # 将 DataFrame 序列化为 JSON（日期转字符串）
+            _records = selected_df.copy()
+            for _col in ["created", "updated", "resolutiondate", "duedate", "created_date", "resolved_date"]:
+                if _col in _records.columns:
+                    _records[_col] = _records[_col].astype(str)
+            # 用 pandas to_json 序列化（自动处理 NaN/NaT → null），再包装成 requests 可用的格式
+            import json as _json
+            _json_str = _records.to_json(orient="records", force_ascii=False)
+            _payload_bytes = f'{{"records": {_json_str}}}'.encode("utf-8")
+            try:
+                _resp = _req.post(
+                    f"{CHART_SERVER}/charts",
+                    data=_payload_bytes,
+                    headers={"Content-Type": "application/json"},
+                    timeout=10,
+                )
+                _resp.raise_for_status()
+                _cv1.html(_resp.text, height=1000, scrolling=True)
+            except Exception as _e:
+                st.error(f"图表服务未启动或请求失败：{_e}\n\n请先运行：`python chart_server.py`")
 
-            # 第三行：趋势图
-            from kpi_charts import create_trend_chart
-            fig_trend = create_trend_chart(selected_df)
-            st.plotly_chart(fig_trend, use_container_width=True)
-
-            # 提示：基于选中数量
             if selected_keys and len(selected_keys) < len(df):
                 st.caption(f"注：以上 KPI 基于选中的 {len(selected_keys)} 条 issue（共 {len(df)} 条）")
             else:

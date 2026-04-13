@@ -16,7 +16,9 @@ class IssueRecord:
     resolutiondate: Optional[pd.Timestamp]
     duedate: Optional[pd.Timestamp]
     assignee: Optional[str]
+    assignee_name: Optional[str]   # JIRA login name (email in this instance)
     reporter: Optional[str]
+    reporter_name: Optional[str]   # JIRA login name (email in this instance)
     labels: List[str]
 
 
@@ -37,7 +39,9 @@ def normalize_issues(raw_issues: List[Dict[str, Any]]) -> pd.DataFrame:
             resolutiondate=_safe_parse_date(fields.get("resolutiondate")),
             duedate=_safe_parse_date(fields.get("duedate")),
             assignee=(assignee or {}).get("displayName") if assignee else None,
+            assignee_name=(assignee or {}).get("name") if assignee else None,
             reporter=(reporter or {}).get("displayName") if reporter else None,
+            reporter_name=(reporter or {}).get("name") if reporter else None,
             labels=labels,
         )
         records.append(record)
@@ -53,7 +57,9 @@ def normalize_issues(raw_issues: List[Dict[str, Any]]) -> pd.DataFrame:
                 "resolutiondate",
                 "duedate",
                 "assignee",
+                "assignee_name",
                 "reporter",
+                "reporter_name",
                 "labels",
             ]
         )
