@@ -1013,6 +1013,8 @@ def main() -> None:
     # KPI 图表显示状态
     if "kpi_charts_visible" not in st.session_state:
         st.session_state["kpi_charts_visible"] = False
+    if "kpi_snapshot_keys" not in st.session_state:
+        st.session_state["kpi_snapshot_keys"] = None  # None 表示尚未触发计算
 
     # 提前获取 step1_complete 状态，供侧边栏使用
     step1_complete = st.session_state.get("step1_complete", False)
@@ -1157,7 +1159,13 @@ def main() -> None:
             # KPI 图表按钮
             kpi_button_label = "隐藏 KPI 图表" if st.session_state.get("kpi_charts_visible", False) else "显示 KPI 图表"
             if st.button(kpi_button_label, key="kpi_toggle_button", use_container_width=True):
-                st.session_state["kpi_charts_visible"] = not st.session_state.get("kpi_charts_visible", False)
+                will_show = not st.session_state.get("kpi_charts_visible", False)
+                st.session_state["kpi_charts_visible"] = will_show
+                if will_show:
+                    # 点击「显示」时快照当前选中的 keys，后续 checkbox 变化不影响 KPI
+                    st.session_state["kpi_snapshot_keys"] = set(
+                        st.session_state.get("selected_issue_keys", set())
+                    )
                 st.rerun()
         else:
             st.button(t["search_button"], key="step1_button")
@@ -1311,6 +1319,8 @@ def main() -> None:
         st.session_state["selected_issue_keys"] = set()
         st.session_state["issue_selector_df"] = None
         st.session_state["issue_selector_needs_init"] = True
+        st.session_state["kpi_charts_visible"] = False
+        st.session_state["kpi_snapshot_keys"] = None
         st.session_state.pop("preset_cat_selector", None)
         st.session_state.pop("preset_sub_selector", None)
         st.rerun()
@@ -1448,12 +1458,15 @@ def main() -> None:
             st.markdown("---")
             st.subheader(t["kpi_title"])
 
-            # 获取选中的 issue 数据
-            selected_keys = st.session_state.get("selected_issue_keys", set())
-            if selected_keys:
-                selected_df = df[df["key"].isin(selected_keys)].copy()
+            # 使用快照 keys（点击按钮时固定），不随 checkbox 实时变化
+            snapshot_keys = st.session_state.get("kpi_snapshot_keys")
+            if snapshot_keys:
+                selected_df = df[df["key"].isin(snapshot_keys)].copy()
             else:
                 selected_df = df.copy()
+
+            # 提示用户当前 KPI 基于的数据范围
+            st.caption(f"📊 基于点击「显示 KPI 图表」时选中的 {len(selected_df)} 条 issue（重新点击按钮可刷新）")
 
             # 计算 KPI 指标
             kpi_result = calculate_kpis(selected_df)
@@ -1702,8 +1715,10 @@ def main() -> None:
                     st.session_state["step1_raw_issues"] = []
                     st.session_state["step2_operation"] = None
                     st.session_state["step2_confirmed"] = False
-                    st.session_state["step2_result"] = None  # 清除执行结果
+                    st.session_state["step2_result"] = None
                     st.session_state["selected_issue_keys"] = set()
+                    st.session_state["kpi_charts_visible"] = False
+                    st.session_state["kpi_snapshot_keys"] = None
                     st.rerun()
             else:
                 # 等待用户输入第二步操作描述
