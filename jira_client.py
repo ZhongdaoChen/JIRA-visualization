@@ -593,6 +593,50 @@ class JiraClient:
                 failed.append({"comment": c, "error": str(e)})
         return {"success": success, "failed": failed}
 
+    def get_linked_issue_keys(
+        self,
+        issue_key: str,
+        link_type_name: str = "Testing discovered",
+    ) -> List[str]:
+        """
+        获取一个 ticket 通过指定 link type 关联的所有 ticket keys（双向）。
+
+        Args:
+            issue_key: 目标 ticket key，例如 "GINFOSEC-123"
+            link_type_name: link type 名称，默认 "Testing discovered"
+
+        Returns:
+            关联的 ticket key 列表（去重）
+        """
+        resp = self._session.get(
+            f"{self.config.base_url}rest/api/2/issue/{issue_key}",
+            params={"fields": "issuelinks"},
+            timeout=30,
+        )
+        try:
+            resp.raise_for_status()
+        except HTTPError as exc:
+            raise RuntimeError(
+                f"获取 Issue {issue_key} 的 links 失败：{resp.status_code} {resp.text}"
+            ) from exc
+
+        data = resp.json()
+        issuelinks = data.get("fields", {}).get("issuelinks", [])
+
+        keys: List[str] = []
+        for link in issuelinks:
+            link_type = (link.get("type") or {}).get("name", "")
+            if link_type != link_type_name:
+                continue
+            # 双向都检查
+            for direction in ("inwardIssue", "outwardIssue"):
+                linked = link.get(direction)
+                if linked and linked.get("key"):
+                    keys.append(linked["key"])
+
+        # 去重并排除自身
+        return list({k for k in keys if k != issue_key})
+
     def get_issue_attachments(self, issue_key: str) -> List[Dict[str, Any]]:
         """
         Get all attachments for an issue.
