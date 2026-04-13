@@ -979,6 +979,8 @@ def main() -> None:
         st.session_state["step1_complete"] = False
     if "step1_jql" not in st.session_state:
         st.session_state["step1_jql"] = ""
+    if "step1_query_steps" not in st.session_state:
+        st.session_state["step1_query_steps"] = None  # None=普通查询, list=多步查询
     if "step1_issues" not in st.session_state:
         st.session_state["step1_issues"] = []
     if "step1_raw_issues" not in st.session_state:
@@ -1187,6 +1189,7 @@ def main() -> None:
         resolve_links = cmd.get("resolve_links", False)
 
         # 执行搜索
+        query_steps = None  # 多步查询时记录步骤详情
         try:
             client = JiraClient(JiraConfig(base_url=base_url, pat=pat))
             if resolve_links:
@@ -1199,12 +1202,11 @@ def main() -> None:
                     return
 
                 source_keys = [i["key"] for i in source_issues]
-                st.info(f"找到 {len(source_keys)} 个源 ticket：{', '.join(source_keys[:5])}{'...' if len(source_keys) > 5 else ''}，正在获取关联 tickets...")
 
                 # 收集所有 linked keys（去重）
                 all_linked_keys: set = set()
                 errors = []
-                debug_types: dict = {}  # key → seen link types（调试用）
+                debug_types: dict = {}
                 with st.spinner("第二步：正在获取关联 tickets..."):
                     for key in source_keys:
                         try:
@@ -1218,7 +1220,6 @@ def main() -> None:
                     st.warning(f"部分 ticket 获取 links 失败：{'; '.join(errors)}")
 
                 if not all_linked_keys:
-                    # 显示实际的 link types 帮助诊断
                     st.warning("未找到任何通过 Testing discovered 关联的 tickets。")
                     if debug_types:
                         with st.expander("🔍 调试：源 ticket 实际包含的 link types"):
@@ -1234,8 +1235,13 @@ def main() -> None:
                 with st.spinner(f"第三步：正在拉取 {len(all_linked_keys)} 个关联 tickets..."):
                     raw_issues = client.search_issues(jql=keys_jql, max_results=len(all_linked_keys) + 10)
 
-                # 用实际执行的 JQL 和来源信息记录
-                jql = f"/* 源: {jql} → resolve_links */ {keys_jql}"
+                # 记录多步骤详情（用于 UI 展示）
+                query_steps = [
+                    {"label": "第一步：查找源 tickets", "jql": jql, "count": len(source_keys), "keys": source_keys},
+                    {"label": "第二步：获取 Testing discovered 关联 keys", "keys": sorted(all_linked_keys), "count": len(all_linked_keys)},
+                    {"label": "第三步：拉取关联 tickets", "jql": keys_jql, "count": len(raw_issues)},
+                ]
+                jql = keys_jql  # step1_jql 存最终 JQL
             else:
                 with st.spinner("从 JIRA 拉取数据中，请稍候..."):
                     raw_issues = client.search_issues(jql=jql, max_results=max_results)
@@ -1250,6 +1256,7 @@ def main() -> None:
         # 保存到 session state
         st.session_state["step1_complete"] = True
         st.session_state["step1_jql"] = jql
+        st.session_state["step1_query_steps"] = query_steps
         st.session_state["step1_issues"] = normalize_issues(raw_issues)
         st.session_state["step1_raw_issues"] = raw_issues
         st.session_state["selected_issue_keys"] = set()  # 重置选中状态
@@ -1283,6 +1290,7 @@ def main() -> None:
     if st.session_state.get("step1_button") and step1_complete:
         st.session_state["step1_complete"] = False
         st.session_state["step1_jql"] = ""
+        st.session_state["step1_query_steps"] = None
         st.session_state["step1_issues"] = []
         st.session_state["step1_raw_issues"] = []
         st.session_state["step2_operation"] = None
@@ -1297,13 +1305,27 @@ def main() -> None:
     # 显示第一步的结果
     if step1_complete:
         jql = st.session_state["step1_jql"]
+        query_steps = st.session_state.get("step1_query_steps")
         df = st.session_state["step1_issues"]
         raw_issues = st.session_state["step1_raw_issues"]
         base_url = st.session_state.get("jira_base_url", base_url)  # 获取 JIRA base URL
 
         st.subheader(t["step1_result"])
         st.write(f"共找到 **{len(raw_issues)}** 条 issue")
-        st.code(jql, language="sql")
+
+        if query_steps:
+            # 多步查询：展示每一步详情
+            with st.expander("🔍 查询步骤详情", expanded=True):
+                for i, step in enumerate(query_steps, 1):
+                    st.markdown(f"**{step['label']}**（共 {step['count']} 条）")
+                    if step.get("jql"):
+                        st.code(step["jql"], language="sql")
+                    if step.get("keys") and i < len(query_steps):
+                        # 中间步骤显示 keys，最后一步不重复
+                        st.caption("关联 ticket keys：" + ", ".join(step["keys"][:20]) + ("..." if len(step["keys"]) > 20 else ""))
+        else:
+            # 普通查询：直接显示 JQL
+            st.code(jql, language="sql")
 
         # 构建带选择列的 DataFrame
         display_columns = [
@@ -1662,6 +1684,7 @@ def main() -> None:
                 if st.button(t["regenerate_button"]):
                     st.session_state["step1_complete"] = False
                     st.session_state["step1_jql"] = ""
+                    st.session_state["step1_query_steps"] = None
                     st.session_state["step1_issues"] = []
                     st.session_state["step1_raw_issues"] = []
                     st.session_state["step2_operation"] = None
