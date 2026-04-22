@@ -112,6 +112,7 @@ class KPIResult:
     median_cycle_days: Optional[float]  # 中位数解决周期
     max_cycle_days: Optional[float]  # 最长周期
     overdue_count: int  # 逾期数量
+    overdue_keys: List[str]  # 逾期 ticket key 列表
 
 
 def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult:
@@ -160,17 +161,21 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
     import datetime
     today = datetime.date.today()
     overdue_count = 0
+    overdue_keys: List[str] = []
     if "resolutiondate" in df.columns and "duedate" in df.columns and status_column in df.columns:
         for _, row in df.iterrows():
             rd = row.get("resolutiondate")
             dd = row.get("duedate")
             st_val = str(row.get(status_column, "") or "").lower()
+            key = row.get("key", "")
             # 条件1
             if pd.notna(rd) and pd.notna(dd) and rd > dd:
                 overdue_count += 1
+                overdue_keys.append(key)
             # 条件2（排除已被条件1计入的）
             elif st_val == "accepted" and pd.notna(dd) and dd < today:
                 overdue_count += 1
+                overdue_keys.append(key)
 
     return KPIResult(
         total_count=total_count,
@@ -181,4 +186,5 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
         median_cycle_days=median_cycle_days,
         max_cycle_days=max_cycle_days,
         overdue_count=overdue_count,
+        overdue_keys=sorted(overdue_keys),
     )

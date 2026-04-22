@@ -880,6 +880,96 @@ def create_appsec_service_bar_chart(df: pd.DataFrame):
     return fig
 
 
+def _render_overdue_metric(
+    label: str,
+    overdue_count: int,
+    overdue_keys: list,
+    jira_base_url: str,
+) -> None:
+    """
+    渲染 Overdue KPI 卡片。
+    有逾期 ticket 时，鼠标悬浮显示可点击的 ticket 链接列表。
+    """
+    import streamlit.components.v1 as _cv1
+
+    if overdue_count == 0 or not overdue_keys:
+        st.metric(label=label, value=overdue_count)
+        return
+
+    base = jira_base_url.rstrip("/")
+    links_html = "".join(
+        f'<a href="{base}/browse/{key}" target="_blank">{key}</a>'
+        for key in overdue_keys
+    )
+    # 每行最多显示的 ticket 数，超出时显示滚动条
+    tooltip_height = min(len(overdue_keys) * 26 + 16, 260)
+    card_html = f"""
+<style>
+  .ov-wrap {{
+    position: relative;
+    font-family: sans-serif;
+    display: inline-block;
+    width: 100%;
+  }}
+  .ov-label {{
+    font-size: 0.875rem;
+    color: #888;
+    margin-bottom: 4px;
+  }}
+  .ov-value {{
+    font-size: 2rem;
+    font-weight: 700;
+    color: #d9534f;
+    cursor: default;
+    user-select: none;
+  }}
+  .ov-hint {{
+    font-size: 0.72rem;
+    color: #aaa;
+    margin-top: 2px;
+  }}
+  .ov-tooltip {{
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 9999;
+    background: #1e1e2e;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px 10px;
+    width: max-content;
+    max-width: 320px;
+    max-height: {tooltip_height}px;
+    overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }}
+  .ov-tooltip a {{
+    display: block;
+    color: #4fc3f7;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 2px 0;
+    white-space: nowrap;
+  }}
+  .ov-tooltip a:hover {{
+    text-decoration: underline;
+    color: #81d4fa;
+  }}
+  .ov-wrap:hover .ov-tooltip {{
+    display: block;
+  }}
+</style>
+<div class="ov-wrap">
+  <div class="ov-label">{label}</div>
+  <div class="ov-value">{overdue_count}</div>
+  <div class="ov-hint">🖱 悬浮查看 tickets</div>
+  <div class="ov-tooltip">{links_html}</div>
+</div>
+"""
+    _cv1.html(card_html, height=90)
+
+
 def main() -> None:
     st.set_page_config(page_title="JIRA 可视化看板", layout="wide")
 
@@ -1482,7 +1572,13 @@ def main() -> None:
             cycle_cols[0].metric(label=t["kpi_avg_cycle"], value=f"{kpi_result.avg_cycle_days:.1f}天" if kpi_result.avg_cycle_days else "N/A")
             cycle_cols[1].metric(label=t["kpi_median_cycle"], value=f"{kpi_result.median_cycle_days:.1f}天" if kpi_result.median_cycle_days else "N/A")
             cycle_cols[2].metric(label=t["kpi_max_cycle"], value=f"{kpi_result.max_cycle_days:.1f}天" if kpi_result.max_cycle_days else "N/A")
-            cycle_cols[3].metric(label=t["kpi_overdue"], value=kpi_result.overdue_count)
+            with cycle_cols[3]:
+                _render_overdue_metric(
+                    label=t["kpi_overdue"],
+                    overdue_count=kpi_result.overdue_count,
+                    overdue_keys=kpi_result.overdue_keys,
+                    jira_base_url=st.session_state.get("jira_base_url", ""),
+                )
 
             st.markdown("---")
 
