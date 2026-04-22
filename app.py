@@ -888,84 +888,138 @@ def _render_overdue_metric(
 ) -> None:
     """
     渲染 Overdue KPI 卡片。
-    有逾期 ticket 时，鼠标悬浮显示可点击的 ticket 链接列表。
+    有逾期 ticket 时，鼠标悬浮时通过 JS 将浮层注入父页面 DOM（绕过 iframe 裁剪），
+    显示可点击的 ticket 链接列表。
     """
     import streamlit.components.v1 as _cv1
+    import json
 
     if overdue_count == 0 or not overdue_keys:
         st.metric(label=label, value=overdue_count)
         return
 
     base = jira_base_url.rstrip("/")
-    links_html = "".join(
-        f'<a href="{base}/browse/{key}" target="_blank">{key}</a>'
-        for key in overdue_keys
-    )
-    # 每行最多显示的 ticket 数，超出时显示滚动条
-    tooltip_height = min(len(overdue_keys) * 26 + 16, 260)
+    # 将链接数据传给 JS，避免在 HTML 字符串里做拼接
+    links_data = json.dumps([
+        {"key": k, "url": f"{base}/browse/{k}"}
+        for k in overdue_keys
+    ])
+
     card_html = f"""
 <style>
-  .ov-wrap {{
-    position: relative;
-    font-family: sans-serif;
-    display: inline-block;
-    width: 100%;
-  }}
+  body {{ margin: 0; background: transparent; }}
   .ov-label {{
     font-size: 0.875rem;
     color: #888;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    font-family: sans-serif;
   }}
   .ov-value {{
     font-size: 2rem;
     font-weight: 700;
     color: #d9534f;
+    font-family: sans-serif;
     cursor: default;
-    user-select: none;
   }}
   .ov-hint {{
-    font-size: 0.72rem;
+    font-size: 0.70rem;
     color: #aaa;
-    margin-top: 2px;
-  }}
-  .ov-tooltip {{
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 9999;
-    background: #1e1e2e;
-    border: 1px solid #444;
-    border-radius: 6px;
-    padding: 8px 10px;
-    width: max-content;
-    max-width: 320px;
-    max-height: {tooltip_height}px;
-    overflow-y: auto;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-  }}
-  .ov-tooltip a {{
-    display: block;
-    color: #4fc3f7;
-    text-decoration: none;
-    font-size: 0.85rem;
-    padding: 2px 0;
-    white-space: nowrap;
-  }}
-  .ov-tooltip a:hover {{
-    text-decoration: underline;
-    color: #81d4fa;
-  }}
-  .ov-wrap:hover .ov-tooltip {{
-    display: block;
+    font-family: sans-serif;
+    margin-top: 1px;
   }}
 </style>
-<div class="ov-wrap">
+
+<div id="ov-card">
   <div class="ov-label">{label}</div>
   <div class="ov-value">{overdue_count}</div>
   <div class="ov-hint">🖱 悬浮查看 tickets</div>
-  <div class="ov-tooltip">{links_html}</div>
 </div>
+
+<script>
+(function() {{
+  const LINKS = {links_data};
+  const OVERLAY_ID = 'ov-parent-overlay';
+  const card = document.getElementById('ov-card');
+  const iframe = window.frameElement;
+
+  // ── 在父页面创建/复用浮层 ──────────────────────────
+  let overlay = parent.document.getElementById(OVERLAY_ID);
+  if (!overlay) {{
+    // 注入样式
+    const s = parent.document.createElement('style');
+    s.textContent = `
+      #${{OVERLAY_ID}} {{
+        position: fixed;
+        z-index: 2147483647;
+        background: #1a1a2e;
+        border: 1px solid #555;
+        border-radius: 8px;
+        padding: 8px 12px;
+        max-height: 280px;
+        min-width: 150px;
+        max-width: 300px;
+        overflow-y: auto;
+        box-shadow: 0 6px 24px rgba(0,0,0,0.7);
+        display: none;
+        font-family: sans-serif;
+      }}
+      #${{OVERLAY_ID}} .ov-title {{
+        font-size: 11px;
+        color: #aaa;
+        margin-bottom: 6px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }}
+      #${{OVERLAY_ID}} a {{
+        display: block;
+        color: #4fc3f7;
+        text-decoration: none;
+        font-size: 13px;
+        padding: 3px 0;
+        white-space: nowrap;
+      }}
+      #${{OVERLAY_ID}} a:hover {{
+        color: #81d4fa;
+        text-decoration: underline;
+      }}
+    `;
+    parent.document.head.appendChild(s);
+    overlay = parent.document.createElement('div');
+    overlay.id = OVERLAY_ID;
+    parent.document.body.appendChild(overlay);
+  }}
+
+  // 每次渲染时刷新链接内容
+  overlay.innerHTML =
+    '<div class="ov-title">Overdue Tickets (' + LINKS.length + ')</div>' +
+    LINKS.map(l => `<a href="${{l.url}}" target="_blank">${{l.key}}</a>`).join('');
+
+  // ── 定位并显示 ──────────────────────────────────────
+  function show() {{
+    const r = iframe.getBoundingClientRect();
+    // 优先显示在卡片下方；若下方空间不足则显示在上方
+    const spaceBelow = parent.window.innerHeight - r.bottom;
+    if (spaceBelow > 160 || spaceBelow > r.top) {{
+      overlay.style.top  = (r.bottom + 6) + 'px';
+    }} else {{
+      overlay.style.top  = (r.top - overlay.offsetHeight - 6) + 'px';
+    }}
+    overlay.style.left = r.left + 'px';
+    overlay.style.display = 'block';
+  }}
+
+  function hide() {{
+    setTimeout(function() {{
+      if (!overlay.matches(':hover')) overlay.style.display = 'none';
+    }}, 120);
+  }}
+
+  card.addEventListener('mouseenter', show);
+  card.addEventListener('mouseleave', hide);
+  overlay.addEventListener('mouseleave', hide);
+}})();
+</script>
 """
     _cv1.html(card_html, height=90)
 
