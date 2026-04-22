@@ -1070,8 +1070,8 @@ def main() -> None:
             "kpi_closed": "已关闭数",
             "kpi_resolution_rate": "解决率",
             "kpi_avg_cycle": "平均周期",
-            "kpi_median_cycle": "中位数周期",
             "kpi_critical_high": "Critical/High",
+            "kpi_critical_high_fix_rate": "Critical/High 修复率",
             "kpi_overdue": "Overdue",
         },
         "en": {
@@ -1115,8 +1115,8 @@ def main() -> None:
             "kpi_closed": "Closed",
             "kpi_resolution_rate": "Resolution Rate",
             "kpi_avg_cycle": "Avg Cycle Time",
-            "kpi_median_cycle": "Median Cycle Time",
             "kpi_critical_high": "Critical/High",
+            "kpi_critical_high_fix_rate": "Critical/High Fix Rate",
             "kpi_overdue": "Overdue",
         },
     }
@@ -1624,8 +1624,8 @@ def main() -> None:
 
             cycle_cols = st.columns(4)
             cycle_cols[0].metric(label=t["kpi_avg_cycle"], value=f"{kpi_result.avg_cycle_days:.1f}天" if kpi_result.avg_cycle_days else "N/A")
-            cycle_cols[1].metric(label=t["kpi_median_cycle"], value=f"{kpi_result.median_cycle_days:.1f}天" if kpi_result.median_cycle_days else "N/A")
-            cycle_cols[2].metric(label=t["kpi_critical_high"], value=kpi_result.critical_high_count)
+            cycle_cols[1].metric(label=t["kpi_critical_high"], value=kpi_result.critical_high_count)
+            cycle_cols[2].metric(label=t["kpi_critical_high_fix_rate"], value=f"{kpi_result.critical_high_fix_rate:.1f}%")
             with cycle_cols[3]:
                 _render_overdue_metric(
                     label=t["kpi_overdue"],

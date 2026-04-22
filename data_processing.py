@@ -112,8 +112,8 @@ class KPIResult:
     closed_count: int  # 已关闭数
     resolution_rate: float  # 解决率 (0-100)
     avg_cycle_days: Optional[float]  # 平均解决周期
-    median_cycle_days: Optional[float]  # 中位数解决周期
     critical_high_count: int  # priority 为 Critical 或 High 的数量
+    critical_high_fix_rate: float  # Critical/High 的修复率 (0-100)
     overdue_count: int  # 逾期数量
     overdue_keys: List[str]  # 逾期 ticket key 列表
 
@@ -149,20 +149,21 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
     cycle_days = df.get("cycle_time_days")
     if cycle_days is not None:
         cycle_days_valid = cycle_days.dropna()
-        if len(cycle_days_valid) > 0:
-            avg_cycle_days = float(cycle_days_valid.mean())
-            median_cycle_days = float(cycle_days_valid.median())
-        else:
-            avg_cycle_days = median_cycle_days = None
+        avg_cycle_days = float(cycle_days_valid.mean()) if len(cycle_days_valid) > 0 else None
     else:
-        avg_cycle_days = median_cycle_days = None
+        avg_cycle_days = None
 
-    # Critical / High 数量
+    # Critical / High 数量及修复率
     critical_high_count = 0
+    critical_high_fix_rate = 0.0
     if "priority" in df.columns:
-        critical_high_count = int(df["priority"].apply(
+        ch_mask = df["priority"].apply(
             lambda x: str(x).lower() in {"critical", "high"} if pd.notna(x) else False
-        ).sum())
+        )
+        critical_high_count = int(ch_mask.sum())
+        if critical_high_count > 0 and "resolutiondate" in df.columns:
+            ch_resolved = df.loc[ch_mask, "resolutiondate"].notna().sum()
+            critical_high_fix_rate = float(ch_resolved / critical_high_count * 100)
 
     # Overdue 统计
     # 条件1：resolutiondate 和 duedate 均存在，且 resolutiondate > duedate
@@ -192,8 +193,8 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
         closed_count=closed_count,
         resolution_rate=resolution_rate,
         avg_cycle_days=avg_cycle_days,
-        median_cycle_days=median_cycle_days,
         critical_high_count=critical_high_count,
+        critical_high_fix_rate=critical_high_fix_rate,
         overdue_count=overdue_count,
         overdue_keys=sorted(overdue_keys),
     )
