@@ -105,6 +105,7 @@ class JiraClient:
             fields = [
                 "summary",
                 "status",
+                "priority",
                 "created",
                 "updated",
                 "resolutiondate",
