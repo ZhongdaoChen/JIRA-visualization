@@ -369,7 +369,7 @@ def create_kpi_cards(kpi_result) -> str:
         "解决率": {"value": f"{kpi_result.resolution_rate:.1f}%", "delta": None},
         "平均周期": {"value": f"{kpi_result.avg_cycle_days:.1f}天" if kpi_result.avg_cycle_days else "N/A", "delta": None},
         "中位数周期": {"value": f"{kpi_result.median_cycle_days:.1f}天" if kpi_result.median_cycle_days else "N/A", "delta": None},
-        "最长周期": {"value": f"{kpi_result.max_cycle_days:.1f}天" if kpi_result.max_cycle_days else "N/A", "delta": None},
+        "Critical/High": {"value": kpi_result.critical_high_count, "delta": None},
         "Overdue": {"value": kpi_result.overdue_count, "delta": None},
     }
     return cards

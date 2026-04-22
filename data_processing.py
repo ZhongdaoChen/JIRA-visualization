@@ -11,6 +11,7 @@ class IssueRecord:
     key: str
     summary: str
     status: str
+    priority: Optional[str]
     created: Optional[pd.Timestamp]
     updated: Optional[pd.Timestamp]
     resolutiondate: Optional[pd.Timestamp]
@@ -34,6 +35,7 @@ def normalize_issues(raw_issues: List[Dict[str, Any]]) -> pd.DataFrame:
             key=issue.get("key", ""),
             summary=fields.get("summary", "") or "",
             status=(fields.get("status") or {}).get("name", "") or "",
+            priority=(fields.get("priority") or {}).get("name") or None,
             created=_safe_parse_date(fields.get("created")),
             updated=_safe_parse_date(fields.get("updated")),
             resolutiondate=_safe_parse_date(fields.get("resolutiondate")),
@@ -52,6 +54,7 @@ def normalize_issues(raw_issues: List[Dict[str, Any]]) -> pd.DataFrame:
                 "key",
                 "summary",
                 "status",
+                "priority",
                 "created",
                 "updated",
                 "resolutiondate",
@@ -110,7 +113,7 @@ class KPIResult:
     resolution_rate: float  # 解决率 (0-100)
     avg_cycle_days: Optional[float]  # 平均解决周期
     median_cycle_days: Optional[float]  # 中位数解决周期
-    max_cycle_days: Optional[float]  # 最长周期
+    critical_high_count: int  # priority 为 Critical 或 High 的数量
     overdue_count: int  # 逾期数量
     overdue_keys: List[str]  # 逾期 ticket key 列表
 
@@ -149,11 +152,17 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
         if len(cycle_days_valid) > 0:
             avg_cycle_days = float(cycle_days_valid.mean())
             median_cycle_days = float(cycle_days_valid.median())
-            max_cycle_days = float(cycle_days_valid.max())
         else:
-            avg_cycle_days = median_cycle_days = max_cycle_days = None
+            avg_cycle_days = median_cycle_days = None
     else:
-        avg_cycle_days = median_cycle_days = max_cycle_days = None
+        avg_cycle_days = median_cycle_days = None
+
+    # Critical / High 数量
+    critical_high_count = 0
+    if "priority" in df.columns:
+        critical_high_count = int(df["priority"].apply(
+            lambda x: str(x).lower() in {"critical", "high"} if pd.notna(x) else False
+        ).sum())
 
     # Overdue 统计
     # 条件1：resolutiondate 和 duedate 均存在，且 resolutiondate > duedate
@@ -184,7 +193,7 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
         resolution_rate=resolution_rate,
         avg_cycle_days=avg_cycle_days,
         median_cycle_days=median_cycle_days,
-        max_cycle_days=max_cycle_days,
+        critical_high_count=critical_high_count,
         overdue_count=overdue_count,
         overdue_keys=sorted(overdue_keys),
     )
