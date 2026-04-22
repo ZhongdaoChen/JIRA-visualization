@@ -1,5 +1,8 @@
 import dataclasses
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
+
+# 视为等价的 "Testing discovered" 系列 link type 名称
+TESTING_LINK_TYPES: List[str] = ["Testing discovered", "Discovered while testing", "approval for"]
 
 import requests
 from requests import HTTPError
@@ -596,11 +599,13 @@ class JiraClient:
     def get_linked_issue_keys(
         self,
         issue_key: str,
-        link_type_name: str = "Testing discovered",
+        link_type_name: Union[str, List[str], None] = None,
     ) -> tuple:
         """
         获取一个 ticket 通过指定 link type 关联的所有 ticket keys（双向）。
         匹配时大小写不敏感，同时检查 type.name / type.inward / type.outward。
+
+        link_type_name 可以是单个字符串、字符串列表或 None（默认使用 TESTING_LINK_TYPES）。
 
         Returns:
             (linked_keys: List[str], all_link_type_names: List[str])
@@ -621,7 +626,15 @@ class JiraClient:
         data = resp.json()
         issuelinks = data.get("fields", {}).get("issuelinks", [])
 
-        target_lower = link_type_name.lower()
+        # 规范化要匹配的 link type 列表
+        if link_type_name is None:
+            match_names = TESTING_LINK_TYPES
+        elif isinstance(link_type_name, str):
+            match_names = [link_type_name]
+        else:
+            match_names = list(link_type_name)
+        targets_lower = [n.lower() for n in match_names]
+
         keys: List[str] = []
         seen_types: List[str] = []
 
@@ -636,9 +649,10 @@ class JiraClient:
             if label not in seen_types:
                 seen_types.append(label)
 
-            # 大小写不敏感匹配 name / inward / outward
+            # 大小写不敏感匹配 name / inward / outward（支持多个 link type）
             matched = any(
-                target_lower in s.lower()
+                target in s.lower()
+                for target in targets_lower
                 for s in [type_name, inward, outward]
             )
             if not matched:

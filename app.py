@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from baidu_llm import QwenClient, QwenConfig
 from data_processing import normalize_issues, calculate_kpis
-from jira_client import JiraClient, JiraConfig
+from jira_client import JiraClient, JiraConfig, TESTING_LINK_TYPES
 from kpi_charts import render_kpi_dashboard
 
 
@@ -159,7 +159,7 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             "{\n"
             '  "mode": "query",       // 固定为 query\n'
             '  "jql": "...",          // 一条完整的 JQL，用于选中 issue\n'
-            '  "resolve_links": true  // (可选) 若为 true，先用 jql 找到 ticket，再返回这些 ticket 通过 Testing discovered 关联的所有 tickets\n'
+            '  "resolve_links": true  // (可选) 若为 true，先用 jql 找到 ticket，再返回这些 ticket 通过 Testing discovered / Discovered while testing 关联的所有 tickets\n'
             "}\n"
             "无论用户是否指定 project，JQL 中**必须始终包含** project = \"GINFOSEC\" 作为第一个条件。\n"
             "时间范围请转换为 created 字段的 >= 和 <= 形式，使用具体日期（如 2026-01-01），不要使用 +、- 等相对日期符号。\n"
@@ -174,7 +174,7 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             '  → {"mode": "query", "jql": "project = \\"GINFOSEC\\" AND summary ~ \\"xxx\\"", "resolve_links": true}\n'
             '  用户说「找到和 GINFOSEC-123 linked 的所有 tickets」\n'
             '  → {"mode": "query", "jql": "project = \\"GINFOSEC\\" AND key = \\"GINFOSEC-123\\"", "resolve_links": true}\n'
-            "注意：resolve_links 的场景下，jql 是用来找到「源 ticket」的，最终结果是源 ticket 的所有 Testing discovered 关联 tickets。\n"
+            "注意：resolve_links 的场景下，jql 是用来找到「源 ticket」的，最终结果是源 ticket 的所有 Testing discovered / Discovered while testing 关联 tickets。\n"
         )
     else:
         # 第二步：只生成操作指令（不包含 JQL）
@@ -222,7 +222,7 @@ def interpret_nl_command(description: str, default_project: Optional[str], step:
             "\n=== link_to 字段示例 ===\n"
             "- 链接到目标 ticket: {\"link_to\": \"GINFOSEC-94691\"}\n"
             "- 当用户说'把这些 ticket 都 link 到 xxx'时，使用此字段\n"
-            "- Link Type 固定使用 \"Testing discovered\"\n"
+            "- Link Type 固定使用 \"Testing discovered\" 或 \"Discovered while testing\"\n"
         )
 
     if step == 1:
@@ -1231,7 +1231,7 @@ def main() -> None:
                 with st.spinner("第二步：正在获取关联 tickets..."):
                     for key in source_keys:
                         try:
-                            linked, seen_types = client.get_linked_issue_keys(key, link_type_name="Testing discovered")
+                            linked, seen_types = client.get_linked_issue_keys(key, link_type_name=TESTING_LINK_TYPES)
                             all_linked_keys.update(linked)
                             debug_types[key] = seen_types
                         except Exception as e:
@@ -1241,7 +1241,7 @@ def main() -> None:
                     st.warning(f"部分 ticket 获取 links 失败：{'; '.join(errors)}")
 
                 if not all_linked_keys:
-                    st.warning("未找到任何通过 Testing discovered 关联的 tickets。")
+                    st.warning("未找到任何通过 Testing discovered / Discovered while testing 关联的 tickets。")
                     if debug_types:
                         with st.expander("🔍 调试：源 ticket 实际包含的 link types"):
                             for k, types in debug_types.items():
@@ -1259,7 +1259,7 @@ def main() -> None:
                 # 记录多步骤详情（用于 UI 展示）
                 query_steps = [
                     {"label": "第一步：查找源 tickets", "jql": jql, "count": len(source_keys), "keys": source_keys},
-                    {"label": "第二步：获取 Testing discovered 关联 keys", "keys": sorted(all_linked_keys), "count": len(all_linked_keys)},
+                    {"label": "第二步：获取 Testing discovered / Discovered while testing 关联 keys", "keys": sorted(all_linked_keys), "count": len(all_linked_keys)},
                     {"label": "第三步：拉取关联 tickets", "jql": keys_jql, "count": len(raw_issues)},
                 ]
                 jql = keys_jql  # step1_jql 存最终 JQL
