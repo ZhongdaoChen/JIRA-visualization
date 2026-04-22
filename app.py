@@ -927,8 +927,8 @@ def main() -> None:
             "kpi_resolution_rate": "解决率",
             "kpi_avg_cycle": "平均周期",
             "kpi_median_cycle": "中位数周期",
-            "kpi_min_cycle": "最短周期",
             "kpi_max_cycle": "最长周期",
+            "kpi_overdue": "Overdue",
         },
         "en": {
             "title": "JIRA Data Visualization Dashboard",
@@ -972,8 +972,8 @@ def main() -> None:
             "kpi_resolution_rate": "Resolution Rate",
             "kpi_avg_cycle": "Avg Cycle Time",
             "kpi_median_cycle": "Median Cycle Time",
-            "kpi_min_cycle": "Min Cycle Time",
             "kpi_max_cycle": "Max Cycle Time",
+            "kpi_overdue": "Overdue",
         },
     }
 
@@ -1481,8 +1481,8 @@ def main() -> None:
             cycle_cols = st.columns(4)
             cycle_cols[0].metric(label=t["kpi_avg_cycle"], value=f"{kpi_result.avg_cycle_days:.1f}天" if kpi_result.avg_cycle_days else "N/A")
             cycle_cols[1].metric(label=t["kpi_median_cycle"], value=f"{kpi_result.median_cycle_days:.1f}天" if kpi_result.median_cycle_days else "N/A")
-            cycle_cols[2].metric(label=t["kpi_min_cycle"], value=f"{kpi_result.min_cycle_days:.1f}天" if kpi_result.min_cycle_days else "N/A")
-            cycle_cols[3].metric(label=t["kpi_max_cycle"], value=f"{kpi_result.max_cycle_days:.1f}天" if kpi_result.max_cycle_days else "N/A")
+            cycle_cols[2].metric(label=t["kpi_max_cycle"], value=f"{kpi_result.max_cycle_days:.1f}天" if kpi_result.max_cycle_days else "N/A")
+            cycle_cols[3].metric(label=t["kpi_overdue"], value=kpi_result.overdue_count)
 
             st.markdown("---")
 

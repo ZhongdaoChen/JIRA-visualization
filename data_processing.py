@@ -110,8 +110,8 @@ class KPIResult:
     resolution_rate: float  # 解决率 (0-100)
     avg_cycle_days: Optional[float]  # 平均解决周期
     median_cycle_days: Optional[float]  # 中位数解决周期
-    min_cycle_days: Optional[float]  # 最短周期
     max_cycle_days: Optional[float]  # 最长周期
+    overdue_count: int  # 逾期数量
 
 
 def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult:
@@ -148,12 +148,29 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
         if len(cycle_days_valid) > 0:
             avg_cycle_days = float(cycle_days_valid.mean())
             median_cycle_days = float(cycle_days_valid.median())
-            min_cycle_days = float(cycle_days_valid.min())
             max_cycle_days = float(cycle_days_valid.max())
         else:
-            avg_cycle_days = median_cycle_days = min_cycle_days = max_cycle_days = None
+            avg_cycle_days = median_cycle_days = max_cycle_days = None
     else:
-        avg_cycle_days = median_cycle_days = min_cycle_days = max_cycle_days = None
+        avg_cycle_days = median_cycle_days = max_cycle_days = None
+
+    # Overdue 统计
+    # 条件1：resolutiondate 和 duedate 均存在，且 resolutiondate > duedate
+    # 条件2：状态为 accepted（大小写不敏感），且 duedate < 今天
+    import datetime
+    today = datetime.date.today()
+    overdue_count = 0
+    if "resolutiondate" in df.columns and "duedate" in df.columns and status_column in df.columns:
+        for _, row in df.iterrows():
+            rd = row.get("resolutiondate")
+            dd = row.get("duedate")
+            st_val = str(row.get(status_column, "") or "").lower()
+            # 条件1
+            if pd.notna(rd) and pd.notna(dd) and rd > dd:
+                overdue_count += 1
+            # 条件2（排除已被条件1计入的）
+            elif st_val == "accepted" and pd.notna(dd) and dd < today:
+                overdue_count += 1
 
     return KPIResult(
         total_count=total_count,
@@ -162,6 +179,6 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
         resolution_rate=resolution_rate,
         avg_cycle_days=avg_cycle_days,
         median_cycle_days=median_cycle_days,
-        min_cycle_days=min_cycle_days,
         max_cycle_days=max_cycle_days,
+        overdue_count=overdue_count,
     )
