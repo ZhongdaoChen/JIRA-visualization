@@ -614,6 +614,51 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
     return True, None
 
 
+# ── AppSec 服务分类常量（模块级，所有 AppSec 图表共用）──────────────────────────
+_APPSEC_SAST_REPORTER = "shervin.aghdaei@adidas.com"
+_APPSEC_SAST_ASSIGNEES = frozenset({
+    "jesse.zhang@adidas.com", "du.chen@adidas.com", "kiba.yang@adidas.com",
+    "john.fu@adidas.com", "zone.tian@adidas.com", "david.wei@adidas.com",
+    "spencer.shao@adidas.com", "laura.yuan@adidas.com", "jane.lu@adidas.com",
+    "newman.xu@adidas.com",
+})
+_APPSEC_PENTEST_TAGS = frozenset({"ChaiTin_PenTests"})
+_APPSEC_BUGBOUNTY_TAGS = frozenset({"BugBounty"})
+_APPSEC_CONTAINER_TAGS = frozenset({"GCA-Issues-Q1-Critical", "ContainerSecurity", "ContainerSecurityL1.3"})
+_APPSEC_DAST_TAGS = frozenset({"DAST"})
+_APPSEC_CATEGORY_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Ad-hoc", "Other"]
+_APPSEC_COLORS = {
+    "SAST": "#a78bfa",
+    "Pentest": "#38bdf8",
+    "BugBounty": "#4ade80",
+    "Container Security": "#f59e0b",
+    "DAST": "#fb923c",
+    "Ad-hoc": "#6366f1",
+    "Other": "#94a3b8",
+}
+
+
+def _classify_appsec_service(row) -> str:
+    """将单条 issue row 按优先级规则分类为 AppSec 服务类型。"""
+    raw_labels = row.get("labels") or []
+    label_set = frozenset(raw_labels) if isinstance(raw_labels, list) else frozenset()
+    reporter = str(row.get("reporter_name") or row.get("reporter") or "").lower()
+    assignee = str(row.get("assignee_name") or row.get("assignee") or "").lower()
+    if reporter == _APPSEC_SAST_REPORTER and assignee in _APPSEC_SAST_ASSIGNEES:
+        return "SAST"
+    if label_set & _APPSEC_PENTEST_TAGS:
+        return "Pentest"
+    if label_set & _APPSEC_BUGBOUNTY_TAGS:
+        return "BugBounty"
+    if label_set & _APPSEC_CONTAINER_TAGS:
+        return "Container Security"
+    if label_set & _APPSEC_DAST_TAGS:
+        return "DAST"
+    if not label_set:
+        return "Ad-hoc"
+    return "Other"
+
+
 def create_appsec_service_pie_chart(df: pd.DataFrame):
     """
     按服务类型分类的饼图。悬停时显示数量、占比及该类别的 ticket 列表。
@@ -631,42 +676,12 @@ def create_appsec_service_pie_chart(df: pd.DataFrame):
     """
     import plotly.graph_objects as go
 
-    SAST_REPORTER = "shervin.aghdaei@adidas.com"
-    SAST_ASSIGNEES = {
-        "jesse.zhang@adidas.com", "du.chen@adidas.com", "kiba.yang@adidas.com",
-        "john.fu@adidas.com", "zone.tian@adidas.com", "david.wei@adidas.com",
-        "spencer.shao@adidas.com", "laura.yuan@adidas.com", "jane.lu@adidas.com",
-        "newman.xu@adidas.com",
-    }
-    PENTEST_TAGS = {"ChaiTin_PenTests"}
-    BUGBOUNTY_TAGS = {"BugBounty"}
-    CONTAINER_TAGS = {"GCA-Issues-Q1-Critical", "ContainerSecurity", "ContainerSecurityL1.3"}
-    DAST_TAGS = {"DAST"}
-
-    CATEGORY_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Ad-hoc", "Other"]
+    CATEGORY_ORDER = _APPSEC_CATEGORY_ORDER
     tickets = {c: [] for c in CATEGORY_ORDER}
 
     for _, row in df.iterrows():
-        raw_labels = row.get("labels") or []
-        label_set = set(raw_labels) if isinstance(raw_labels, list) else set()
-        reporter = str(row.get("reporter_name") or row.get("reporter") or "").lower()
-        assignee = str(row.get("assignee_name") or row.get("assignee") or "").lower()
         key = str(row.get("key") or "")
-
-        if reporter == SAST_REPORTER and assignee in SAST_ASSIGNEES:
-            tickets["SAST"].append(key)
-        elif label_set & PENTEST_TAGS:
-            tickets["Pentest"].append(key)
-        elif label_set & BUGBOUNTY_TAGS:
-            tickets["BugBounty"].append(key)
-        elif label_set & CONTAINER_TAGS:
-            tickets["Container Security"].append(key)
-        elif label_set & DAST_TAGS:
-            tickets["DAST"].append(key)
-        elif not label_set:
-            tickets["Ad-hoc"].append(key)
-        else:
-            tickets["Other"].append(key)
+        tickets[_classify_appsec_service(row)].append(key)
 
     active_cats = [c for c in CATEGORY_ORDER if tickets[c]]
     values_list = [len(tickets[c]) for c in active_cats]
@@ -682,15 +697,15 @@ def create_appsec_service_pie_chart(df: pd.DataFrame):
 
     customdata = [_format_tickets(tickets[c]) for c in active_cats]
 
-    palette = ["#a78bfa", "#6366f1", "#38bdf8", "#4ade80", "#f59e0b", "#fb923c", "#94a3b8"]
+    palette = [_APPSEC_COLORS.get(c, "#94a3b8") for c in active_cats]
 
     fig = go.Figure(go.Pie(
         labels=active_cats,
         values=values_list,
-        hole=0.4,
+        hole=0.45,
         textinfo="label+value",
         textposition="auto",
-        marker=dict(colors=palette[:len(active_cats)]),
+        marker=dict(colors=palette),
         customdata=customdata,
         hovertemplate=(
             "<b>%{label}</b><br>"
@@ -700,7 +715,7 @@ def create_appsec_service_pie_chart(df: pd.DataFrame):
         ),
     ))
     fig.update_layout(
-        title="服务类型分布",
+        title=dict(text="服务类型分布", font=dict(size=15)),
         height=450,
         margin=dict(l=40, r=160, t=60, b=40),
         legend=dict(orientation="v", x=1.02, y=0.5),
@@ -750,7 +765,7 @@ def create_appsec_status_chart(df: pd.DataFrame):
     fig = go.Figure(go.Pie(
         labels=active,
         values=values_list,
-        hole=0.4,
+        hole=0.45,
         textinfo="label+value",
         textposition="auto",
         marker=dict(colors=palette[:len(active)]),
@@ -763,7 +778,7 @@ def create_appsec_status_chart(df: pd.DataFrame):
         ),
     ))
     fig.update_layout(
-        title="修复状态分布（Open / Accepted / Closed / Reopen）",
+        title=dict(text="修复状态分布（Open / Accepted / Closed / Reopen）", font=dict(size=15)),
         height=450,
         margin=dict(l=40, r=160, t=60, b=40),
         legend=dict(orientation="v", x=1.02, y=0.5),
@@ -788,18 +803,6 @@ def create_appsec_service_bar_chart(df: pd.DataFrame):
     """
     import plotly.graph_objects as go
 
-    SAST_REPORTER = "shervin.aghdaei@adidas.com"
-    SAST_ASSIGNEES = {
-        "jesse.zhang@adidas.com", "du.chen@adidas.com", "kiba.yang@adidas.com",
-        "john.fu@adidas.com", "zone.tian@adidas.com", "david.wei@adidas.com",
-        "spencer.shao@adidas.com", "laura.yuan@adidas.com", "jane.lu@adidas.com",
-        "newman.xu@adidas.com",
-    }
-    PENTEST_TAGS = {"ChaiTin_PenTests"}
-    BUGBOUNTY_TAGS = {"BugBounty"}
-    CONTAINER_TAGS = {"GCA-Issues-Q1-Critical", "ContainerSecurity", "ContainerSecurityL1.3"}
-    DAST_TAGS = {"DAST"}
-
     CATEGORIES = ["Pentest", "BugBounty", "Container Security", "DAST", "SAST", "Ad-hoc", "Other"]
     total = {c: 0 for c in CATEGORIES}
     resolved = {c: 0 for c in CATEGORIES}
@@ -808,27 +811,7 @@ def create_appsec_service_bar_chart(df: pd.DataFrame):
         return pd.notna(row.get("resolutiondate")) and row.get("resolutiondate") is not None
 
     for _, row in df.iterrows():
-        raw_labels = row.get("labels") or []
-        label_set = set(raw_labels) if isinstance(raw_labels, list) else set()
-        reporter = str(row.get("reporter_name") or row.get("reporter") or "").lower()
-        assignee = str(row.get("assignee_name") or row.get("assignee") or "").lower()
-
-        # 分类（优先级顺序）
-        if reporter == SAST_REPORTER and assignee in SAST_ASSIGNEES:
-            cat = "SAST"
-        elif label_set & PENTEST_TAGS:
-            cat = "Pentest"
-        elif label_set & BUGBOUNTY_TAGS:
-            cat = "BugBounty"
-        elif label_set & CONTAINER_TAGS:
-            cat = "Container Security"
-        elif label_set & DAST_TAGS:
-            cat = "DAST"
-        elif not label_set:
-            cat = "Ad-hoc"
-        else:
-            cat = "Other"
-
+        cat = _classify_appsec_service(row)
         total[cat] += 1
         if is_resolved(row):
             resolved[cat] += 1
@@ -845,7 +828,7 @@ def create_appsec_service_bar_chart(df: pd.DataFrame):
 
     fig = go.Figure()
 
-    # 已修复（绿色，底层）
+    # 已修复（底层）
     fig.add_trace(go.Bar(
         name="已修复",
         x=active_cats,
@@ -854,7 +837,7 @@ def create_appsec_service_bar_chart(df: pd.DataFrame):
         hovertemplate="<b>%{x}</b><br>已修复：%{y}<extra></extra>",
     ))
 
-    # 未修复（灰色，上层）
+    # 未修复（上层）
     fig.add_trace(go.Bar(
         name="未修复",
         x=active_cats,
@@ -867,17 +850,183 @@ def create_appsec_service_bar_chart(df: pd.DataFrame):
     ))
 
     fig.update_layout(
-        title="各服务 Ticket 数量与修复率",
+        title=dict(text="各服务 Ticket 数量与修复率", font=dict(size=15)),
         xaxis_title="AppSec 服务",
         yaxis_title="Ticket 数量",
         barmode="stack",
         height=450,
         margin=dict(l=40, r=40, t=80, b=40),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        plot_bgcolor="rgba(0,0,0,0)",
         yaxis=dict(gridcolor="rgba(255,255,255,0.1)"),
     )
     return fig
+
+
+def create_appsec_monthly_comparison_charts(df: pd.DataFrame):
+    """
+    AppSec 月度横向对比图表组合（近 6 个月）。
+
+    返回 4 个 Plotly 图表：
+    1. 每月创建 vs 已解决（分组柱状图）
+    2. 每月新建 Tickets 服务构成（堆叠柱状图）
+    3. 月度净增量（彩色柱状图：红=积压增加，绿=积压减少）
+    4. 服务 × 月份创建量热力图
+
+    "已解决"统计当月 resolutiondate 有值的 tickets（含跨期创建的旧 tickets），
+    "创建"只统计当月创建的 tickets，两者共同构成流量视图（flow view）。
+    """
+    import plotly.graph_objects as go
+    import datetime
+
+    # ── 构建近 6 个月的月份列表（calendar months）────────────────────────────────
+    today = datetime.date.today()
+    months = []
+    for i in range(5, -1, -1):
+        m = today.month - i
+        y = today.year
+        if m <= 0:
+            m += 12
+            y -= 1
+        months.append(f"{y}-{m:02d}")
+
+    # ── 分类 & 月份标注 ───────────────────────────────────────────────────────────
+    df = df.copy()
+    df["_service"] = df.apply(_classify_appsec_service, axis=1)
+    df["_created_month"] = (
+        pd.to_datetime(df["created"], errors="coerce")
+        .dt.to_period("M")
+        .astype(str)
+    )
+    df["_resolved_month"] = (
+        pd.to_datetime(df["resolutiondate"], errors="coerce")
+        .dt.to_period("M")
+        .astype(str)
+    )
+
+    # 只统计在近 6 个月内创建的 tickets（用于创建量图）
+    df_created = df[df["_created_month"].isin(months)]
+    # 统计在近 6 个月内关闭的 tickets（含更早创建的旧 ticket，呈现真实吞吐量）
+    df_resolved = df[df["_resolved_month"].isin(months)]
+
+    created_by_month = df_created.groupby("_created_month").size().reindex(months, fill_value=0)
+    resolved_by_month = df_resolved.groupby("_resolved_month").size().reindex(months, fill_value=0)
+
+    # ── 图表 1：创建 vs 已解决（分组柱状图）─────────────────────────────────────
+    fig1 = go.Figure()
+    fig1.add_trace(go.Bar(
+        name="创建",
+        x=months,
+        y=created_by_month.tolist(),
+        marker_color="#38bdf8",
+        text=created_by_month.tolist(),
+        textposition="outside",
+        hovertemplate="<b>%{x}</b><br>创建：%{y}<extra></extra>",
+    ))
+    fig1.add_trace(go.Bar(
+        name="已解决",
+        x=months,
+        y=resolved_by_month.tolist(),
+        marker_color="#4ade80",
+        text=resolved_by_month.tolist(),
+        textposition="outside",
+        hovertemplate="<b>%{x}</b><br>已解决：%{y}<extra></extra>",
+    ))
+    fig1.update_layout(
+        title=dict(text="📊 每月创建 vs 已解决 Tickets（近 6 个月）", font=dict(size=15)),
+        barmode="group",
+        xaxis_title="月份",
+        yaxis_title="Ticket 数量",
+        height=420,
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=40, r=40, t=80, b=40),
+    )
+
+    # ── 图表 2：服务构成堆叠柱状图（创建）────────────────────────────────────────
+    fig2 = go.Figure()
+    for cat in _APPSEC_CATEGORY_ORDER:
+        counts = (
+            df_created[df_created["_service"] == cat]
+            .groupby("_created_month")
+            .size()
+            .reindex(months, fill_value=0)
+        )
+        if counts.sum() == 0:
+            continue
+        fig2.add_trace(go.Bar(
+            name=cat,
+            x=months,
+            y=counts.tolist(),
+            marker_color=_APPSEC_COLORS.get(cat, "#94a3b8"),
+            hovertemplate=f"<b>{cat}</b><br>月份：%{{x}}<br>创建：%{{y}}<extra></extra>",
+        ))
+    fig2.update_layout(
+        title=dict(text="📦 每月新建 Tickets 服务构成（近 6 个月）", font=dict(size=15)),
+        barmode="stack",
+        xaxis_title="月份",
+        yaxis_title="Ticket 数量",
+        height=420,
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=40, r=40, t=80, b=40),
+    )
+
+    # ── 图表 3：月度净增量（彩色柱状图）─────────────────────────────────────────
+    net = [int(created_by_month[m]) - int(resolved_by_month[m]) for m in months]
+    bar_colors = ["#f87171" if v > 0 else "#4ade80" for v in net]
+    fig3 = go.Figure()
+    fig3.add_trace(go.Bar(
+        x=months,
+        y=net,
+        marker_color=bar_colors,
+        text=[f"+{v}" if v > 0 else str(v) for v in net],
+        textposition="outside",
+        hovertemplate="<b>%{x}</b><br>净增量（创建−解决）：%{y}<extra></extra>",
+    ))
+    fig3.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
+    fig3.update_layout(
+        title=dict(text="月度净增量（创建 − 解决）", font=dict(size=15)),
+        xaxis_title="月份",
+        yaxis_title="净增量",
+        height=380,
+        showlegend=False,
+        margin=dict(l=40, r=40, t=80, b=40),
+        annotations=[dict(
+            x=0.01, y=1.10, xref="paper", yref="paper",
+            text="🔺 正值 = 积压增加  ▼ 负值 = 积压减少",
+            showarrow=False, font=dict(size=11), xanchor="left",
+        )],
+    )
+
+    # ── 图表 4：服务 × 月份热力图（全宽）────────────────────────────────────────
+    z = []
+    for cat in _APPSEC_CATEGORY_ORDER:
+        row_data = [
+            int(df_created[(df_created["_service"] == cat) & (df_created["_created_month"] == m)].shape[0])
+            for m in months
+        ]
+        z.append(row_data)
+
+    fig4 = go.Figure(go.Heatmap(
+        z=z,
+        x=months,
+        y=_APPSEC_CATEGORY_ORDER,
+        colorscale="Blues",
+        text=z,
+        texttemplate="%{text}",
+        hovertemplate="服务：%{y}<br>月份：%{x}<br>创建数：%{z}<extra></extra>",
+        colorbar=dict(title=dict(text="Ticket 数")),
+    ))
+    fig4.update_layout(
+        title=dict(text="🌡️ 服务 × 月份 创建量热力图", font=dict(size=15)),
+        xaxis_title="月份",
+        yaxis_title="服务类型",
+        height=380,
+        margin=dict(l=120, r=60, t=80, b=40),
+        xaxis=dict(side="bottom"),
+    )
+
+    return fig1, fig2, fig3, fig4
 
 
 def _render_overdue_metric(
@@ -1200,11 +1349,29 @@ def main() -> None:
 
         st.header(t["nl_filter"])
 
+        # 动态计算近 6 个月的日期范围（用于月度对比预设）
+        import datetime as _dt
+        _today_d = _dt.date.today()
+        _m6 = _today_d.month - 5
+        _y6 = _today_d.year
+        if _m6 <= 0:
+            _m6 += 12
+            _y6 -= 1
+        _six_months_ago = f"{_y6}-{_m6:02d}-01"
+        _today_str = _today_d.strftime("%Y-%m-%d")
+
         # 预生成的两级筛选条件模板
         PRESET_CATEGORIES = {
             "AppSec服务概览": {
                 "AppSec所有service情况": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND ((reporter in ("peter.chen2@adidas.com", "hanzi.liu@externals.adidas.com", "Leon.Wang@externals.adidas.com") AND summary !~ "Application penetration test") OR (reporter = "Shervin.Aghdaei@adidas.com" AND assignee in ("Jesse.Zhang@adidas.com", "Du.Chen@adidas.com", "Kiba.Yang@adidas.com", "kiba.Yang@adidas.com", "John.Fu@adidas.com", "Zone.Tian@adidas.com", "David.Wei@adidas.com", "Spencer.Shao@adidas.com", "Laura.Yuan@adidas.com", "Jane.Lu@adidas.com", "Newman.Xu@adidas.com"))) ORDER BY created DESC',
                 "AppSec所有High和Critical tickets": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND (reporter = "peter.chen2@adidas.com" OR reporter = "hanzi.liu@externals.adidas.com" OR reporter = "Leon.Wang@externals.adidas.com") AND summary !~ "Application penetration test" AND priority in ("High", "Critical") ORDER BY created DESC',
+                "AppSec Service By Month": (
+                    f'project = "GINFOSEC" AND '
+                    f'((reporter in ("peter.chen2@adidas.com", "hanzi.liu@externals.adidas.com", "Leon.Wang@externals.adidas.com") AND summary !~ "Application penetration test") OR '
+                    f'(reporter = "Shervin.Aghdaei@adidas.com" AND assignee in ("Jesse.Zhang@adidas.com", "Du.Chen@adidas.com", "Kiba.Yang@adidas.com", "kiba.Yang@adidas.com", "John.Fu@adidas.com", "Zone.Tian@adidas.com", "David.Wei@adidas.com", "Spencer.Shao@adidas.com", "Laura.Yuan@adidas.com", "Jane.Lu@adidas.com", "Newman.Xu@adidas.com"))) AND '
+                    f'(created >= "{_six_months_ago}" OR resolutiondate >= "{_six_months_ago}") '
+                    f'ORDER BY created DESC'
+                ),
             },
             "Pentest": {
                 "2026 年 Pentest 项目": 'project = "GINFOSEC" AND reporter = "peter.chen2@adidas.com" AND created >= "2026-01-01" AND created <= "2026-12-31" AND summary ~ "Application penetration test"',
@@ -1651,6 +1818,28 @@ def main() -> None:
                     st.plotly_chart(status_pie, use_container_width=True)
                 service_bar = create_appsec_service_bar_chart(selected_df)
                 st.plotly_chart(service_bar, use_container_width=True)
+                st.markdown("---")
+
+            # ── AppSec Service By Month 月度对比图表 ─────────────────────────────
+            if (
+                st.session_state.get("current_preset_cat") == "AppSec服务概览"
+                and st.session_state.get("current_preset_sub") == "AppSec Service By Month"
+            ):
+                st.subheader("AppSec 月度横向对比（近 6 个月）")
+                st.caption(
+                    "「创建」= 当月在 JIRA 中新建的 tickets；"
+                    "「已解决」= 当月 resolutiondate 有值的 tickets（含更早创建的旧 ticket，反映真实吞吐量）。"
+                )
+                fig_m1, fig_m2, fig_m3, fig_m4 = create_appsec_monthly_comparison_charts(selected_df)
+
+                col1, col2 = st.columns([3, 2])
+                with col1:
+                    st.plotly_chart(fig_m1, use_container_width=True)
+                with col2:
+                    st.plotly_chart(fig_m3, use_container_width=True)
+
+                st.plotly_chart(fig_m2, use_container_width=True)
+                st.plotly_chart(fig_m4, use_container_width=True)
                 st.markdown("---")
 
             # ── 调用 Flask 图表服务渲染 ECharts ──────────────────────────
