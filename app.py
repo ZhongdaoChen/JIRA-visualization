@@ -866,11 +866,10 @@ def create_appsec_monthly_comparison_charts(df: pd.DataFrame):
     """
     AppSec 月度横向对比图表组合（近 6 个月）。
 
-    返回 4 个 Plotly 图表：
+    返回 3 个 Plotly 图表：
     1. 每月创建 vs 已解决（分组柱状图）
     2. 每月新建 Tickets 服务构成（堆叠柱状图）
-    3. 月度净增量（彩色柱状图：红=积压增加，绿=积压减少）
-    4. 服务 × 月份创建量热力图
+    3. 服务 × 月份创建量热力图
 
     "已解决"统计当月 resolutiondate 有值的 tickets（含跨期创建的旧 tickets），
     "创建"只统计当月创建的 tickets，两者共同构成流量视图（flow view）。
@@ -971,34 +970,7 @@ def create_appsec_monthly_comparison_charts(df: pd.DataFrame):
         margin=dict(l=40, r=40, t=80, b=40),
     )
 
-    # ── 图表 3：月度净增量（彩色柱状图）─────────────────────────────────────────
-    net = [int(created_by_month[m]) - int(resolved_by_month[m]) for m in months]
-    bar_colors = ["#f87171" if v > 0 else "#4ade80" for v in net]
-    fig3 = go.Figure()
-    fig3.add_trace(go.Bar(
-        x=months,
-        y=net,
-        marker_color=bar_colors,
-        text=[f"+{v}" if v > 0 else str(v) for v in net],
-        textposition="outside",
-        hovertemplate="<b>%{x}</b><br>净增量（创建−解决）：%{y}<extra></extra>",
-    ))
-    fig3.add_hline(y=0, line_dash="dash", line_color="rgba(255,255,255,0.3)")
-    fig3.update_layout(
-        title=dict(text="月度净增量（创建 − 解决）", font=dict(size=15)),
-        xaxis_title="月份",
-        yaxis_title="净增量",
-        height=380,
-        showlegend=False,
-        margin=dict(l=40, r=40, t=80, b=40),
-        annotations=[dict(
-            x=0.01, y=1.10, xref="paper", yref="paper",
-            text="🔺 正值 = 积压增加  ▼ 负值 = 积压减少",
-            showarrow=False, font=dict(size=11), xanchor="left",
-        )],
-    )
-
-    # ── 图表 4：服务 × 月份热力图（全宽）────────────────────────────────────────
+    # ── 图表 3：服务 × 月份热力图（全宽）────────────────────────────────────────
     z = []
     for cat in _APPSEC_CATEGORY_ORDER:
         row_data = [
@@ -1026,7 +998,7 @@ def create_appsec_monthly_comparison_charts(df: pd.DataFrame):
         xaxis=dict(side="bottom"),
     )
 
-    return fig1, fig2, fig3, fig4
+    return fig1, fig2, fig4
 
 
 def _render_overdue_metric(
@@ -1830,14 +1802,9 @@ def main() -> None:
                     "「创建」= 当月在 JIRA 中新建的 tickets；"
                     "「已解决」= 当月 resolutiondate 有值的 tickets（含更早创建的旧 ticket，反映真实吞吐量）。"
                 )
-                fig_m1, fig_m2, fig_m3, fig_m4 = create_appsec_monthly_comparison_charts(selected_df)
+                fig_m1, fig_m2, fig_m4 = create_appsec_monthly_comparison_charts(selected_df)
 
-                col1, col2 = st.columns([3, 2])
-                with col1:
-                    st.plotly_chart(fig_m1, use_container_width=True)
-                with col2:
-                    st.plotly_chart(fig_m3, use_container_width=True)
-
+                st.plotly_chart(fig_m1, use_container_width=True)
                 st.plotly_chart(fig_m2, use_container_width=True)
                 st.plotly_chart(fig_m4, use_container_width=True)
                 st.markdown("---")
