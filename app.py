@@ -1,7 +1,6 @@
 import os
 from typing import List, Optional
 
-import plotly.express as px
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
@@ -9,7 +8,6 @@ from dotenv import load_dotenv
 from baidu_llm import QwenClient, QwenConfig
 from data_processing import normalize_issues, calculate_kpis
 from jira_client import JiraClient, JiraConfig, TESTING_LINK_TYPES
-from kpi_charts import render_kpi_dashboard
 
 
 load_dotenv()
@@ -657,348 +655,6 @@ def _classify_appsec_service(row) -> str:
     if not label_set:
         return "Ad-hoc"
     return "Other"
-
-
-def create_appsec_service_pie_chart(df: pd.DataFrame):
-    """
-    按服务类型分类的饼图。悬停时显示数量、占比及该类别的 ticket 列表。
-    分类规则（互斥，按优先级）：
-      1. SAST:              reporter == Shervin.Aghdaei@adidas.com
-                            AND assignee in (Jesse.Zhang / Du.Chen / Kiba.Yang /
-                            John.Fu / Zone.Tian / David.Wei / Spencer.Shao /
-                            Laura.Yuan / Jane.Lu / Newman.Xu)
-      2. Pentest:           labels 含 ChaiTin_PenTests
-      3. BugBounty:         labels 含 BugBounty
-      4. Container Security:labels 含 GCA-Issues-Q1-Critical / ContainerSecurity / ContainerSecurityL1.3
-      5. DAST:              labels 含 DAST
-      6. Ad-hoc:            labels 为空且不属于 SAST
-      7. Other:             有标签但不匹配以上任一类别
-    """
-    import plotly.graph_objects as go
-
-    CATEGORY_ORDER = _APPSEC_CATEGORY_ORDER
-    tickets = {c: [] for c in CATEGORY_ORDER}
-
-    for _, row in df.iterrows():
-        key = str(row.get("key") or "")
-        tickets[_classify_appsec_service(row)].append(key)
-
-    active_cats = [c for c in CATEGORY_ORDER if tickets[c]]
-    values_list = [len(tickets[c]) for c in active_cats]
-
-    MAX_DISPLAY = 15
-
-    def _format_tickets(keys):
-        lines = keys[:MAX_DISPLAY]
-        text = "<br>".join(lines)
-        if len(keys) > MAX_DISPLAY:
-            text += f"<br>...以及另外 {len(keys) - MAX_DISPLAY} 条"
-        return text
-
-    customdata = [_format_tickets(tickets[c]) for c in active_cats]
-
-    palette = [_APPSEC_COLORS.get(c, "#94a3b8") for c in active_cats]
-
-    fig = go.Figure(go.Pie(
-        labels=active_cats,
-        values=values_list,
-        hole=0.45,
-        textinfo="label+value",
-        textposition="auto",
-        marker=dict(colors=palette),
-        customdata=customdata,
-        hovertemplate=(
-            "<b>%{label}</b><br>"
-            "数量：%{value}  占比：%{percent}<br>"
-            "─────────────────<br>"
-            "%{customdata}<extra></extra>"
-        ),
-    ))
-    fig.update_layout(
-        title=dict(text="服务类型分布", font=dict(size=15)),
-        height=450,
-        margin=dict(l=40, r=160, t=60, b=40),
-        legend=dict(orientation="v", x=1.02, y=0.5),
-    )
-    return fig
-
-
-def create_appsec_status_chart(df: pd.DataFrame):
-    """
-    按修复状态分类的饼图（Open / Accepted / Closed / Reopen）。
-    悬停时显示数量、占比及该状态下的 ticket 列表。
-    """
-    import plotly.graph_objects as go
-
-    TARGET_STATUSES = ["Open", "Accepted", "Closed", "Reopen"]
-    tickets = {s: [] for s in TARGET_STATUSES}
-    tickets["Other"] = []
-
-    for _, row in df.iterrows():
-        val_lower = str(row.get("status") or "").lower()
-        key = str(row.get("key") or "")
-        matched = False
-        for s in TARGET_STATUSES:
-            if s.lower() in val_lower:
-                tickets[s].append(key)
-                matched = True
-                break
-        if not matched:
-            tickets["Other"].append(key)
-
-    active = [s for s in TARGET_STATUSES + ["Other"] if tickets[s]]
-    values_list = [len(tickets[s]) for s in active]
-
-    MAX_DISPLAY = 15
-
-    def _format_tickets(keys):
-        lines = keys[:MAX_DISPLAY]
-        text = "<br>".join(lines)
-        if len(keys) > MAX_DISPLAY:
-            text += f"<br>...以及另外 {len(keys) - MAX_DISPLAY} 条"
-        return text
-
-    customdata = [_format_tickets(tickets[s]) for s in active]
-
-    palette = ["#38bdf8", "#4ade80", "#94a3b8", "#f87171", "#fb923c"]
-
-    fig = go.Figure(go.Pie(
-        labels=active,
-        values=values_list,
-        hole=0.45,
-        textinfo="label+value",
-        textposition="auto",
-        marker=dict(colors=palette[:len(active)]),
-        customdata=customdata,
-        hovertemplate=(
-            "<b>%{label}</b><br>"
-            "数量：%{value}  占比：%{percent}<br>"
-            "─────────────────<br>"
-            "%{customdata}<extra></extra>"
-        ),
-    ))
-    fig.update_layout(
-        title=dict(text="修复状态分布（Open / Accepted / Closed / Reopen）", font=dict(size=15)),
-        height=450,
-        margin=dict(l=40, r=160, t=60, b=40),
-        legend=dict(orientation="v", x=1.02, y=0.5),
-    )
-    return fig
-
-
-def create_appsec_service_bar_chart(df: pd.DataFrame):
-    """
-    按 AppSec 服务类型的柱状图（堆叠：已修复 vs 未修复），柱顶显示修复率。
-    分类规则（互斥，按优先级）：
-      1. SAST:              reporter == Shervin.Aghdaei@adidas.com
-                            AND assignee in (Jesse.Zhang / Du.Chen / Kiba.Yang /
-                            John.Fu / Zone.Tian / David.Wei / Spencer.Shao /
-                            Laura.Yuan / Jane.Lu / Newman.Xu)
-      2. Pentest:           labels 含 ChaiTin_PenTests
-      3. BugBounty:         labels 含 BugBounty
-      4. Container Security:labels 含 GCA-Issues-Q1-Critical / ContainerSecurity / ContainerSecurityL1.3
-      5. DAST:              labels 含 DAST
-      6. Ad-hoc:            labels 为空且不属于 SAST
-      7. Other:             有标签但不匹配以上任一类别
-    """
-    import plotly.graph_objects as go
-
-    CATEGORIES = ["Pentest", "BugBounty", "Container Security", "DAST", "SAST", "Ad-hoc", "Other"]
-    total = {c: 0 for c in CATEGORIES}
-    resolved = {c: 0 for c in CATEGORIES}
-
-    def is_resolved(row):
-        return pd.notna(row.get("resolutiondate")) and row.get("resolutiondate") is not None
-
-    for _, row in df.iterrows():
-        cat = _classify_appsec_service(row)
-        total[cat] += 1
-        if is_resolved(row):
-            resolved[cat] += 1
-
-    # 只保留有数据的类别，按预设顺序排列
-    active_cats = [c for c in CATEGORIES if total[c] > 0]
-    total_vals = [total[c] for c in active_cats]
-    resolved_vals = [resolved[c] for c in active_cats]
-    unresolved_vals = [total[c] - resolved[c] for c in active_cats]
-    rate_labels = [
-        f"{resolved[c] / total[c] * 100:.0f}%" if total[c] > 0 else "0%"
-        for c in active_cats
-    ]
-
-    fig = go.Figure()
-
-    # 已修复（底层）
-    fig.add_trace(go.Bar(
-        name="已修复",
-        x=active_cats,
-        y=resolved_vals,
-        marker_color="#4ade80",
-        hovertemplate="<b>%{x}</b><br>已修复：%{y}<extra></extra>",
-    ))
-
-    # 未修复（上层）
-    fig.add_trace(go.Bar(
-        name="未修复",
-        x=active_cats,
-        y=unresolved_vals,
-        marker_color="#64748b",
-        hovertemplate="<b>%{x}</b><br>未修复：%{y}<extra></extra>",
-        text=rate_labels,
-        textposition="outside",
-        textfont=dict(size=13, color="#f8fafc"),
-    ))
-
-    fig.update_layout(
-        title=dict(text="各服务 Ticket 数量与修复率", font=dict(size=15)),
-        xaxis_title="AppSec 服务",
-        yaxis_title="Ticket 数量",
-        barmode="stack",
-        height=450,
-        margin=dict(l=40, r=40, t=80, b=40),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        yaxis=dict(gridcolor="rgba(255,255,255,0.1)"),
-    )
-    return fig
-
-
-def create_appsec_monthly_comparison_charts(df: pd.DataFrame):
-    """
-    AppSec 月度横向对比图表组合（近 6 个月）。
-
-    返回 3 个 Plotly 图表：
-    1. 每月创建 vs 已解决（分组柱状图）
-    2. 每月新建 Tickets 服务构成（堆叠柱状图）
-    3. 服务 × 月份创建量热力图
-
-    "已解决"统计当月 resolutiondate 有值的 tickets（含跨期创建的旧 tickets），
-    "创建"只统计当月创建的 tickets，两者共同构成流量视图（flow view）。
-    """
-    import plotly.graph_objects as go
-    import datetime
-
-    # ── 构建近 6 个月的月份列表（calendar months）────────────────────────────────
-    today = datetime.date.today()
-    months = []
-    for i in range(5, -1, -1):
-        m = today.month - i
-        y = today.year
-        if m <= 0:
-            m += 12
-            y -= 1
-        months.append(f"{y}-{m:02d}")
-
-    # ── 分类 & 月份标注 ───────────────────────────────────────────────────────────
-    df = df.copy()
-    df["_service"] = df.apply(_classify_appsec_service, axis=1)
-    df["_created_month"] = (
-        pd.to_datetime(df["created"], errors="coerce")
-        .dt.to_period("M")
-        .astype(str)
-    )
-    df["_resolved_month"] = (
-        pd.to_datetime(df["resolutiondate"], errors="coerce")
-        .dt.to_period("M")
-        .astype(str)
-    )
-
-    # 只统计在近 6 个月内创建的 tickets（用于创建量图）
-    df_created = df[df["_created_month"].isin(months)]
-    # 统计在近 6 个月内关闭的 tickets（含更早创建的旧 ticket，呈现真实吞吐量）
-    df_resolved = df[df["_resolved_month"].isin(months)]
-
-    created_by_month = df_created.groupby("_created_month").size().reindex(months, fill_value=0)
-    resolved_by_month = df_resolved.groupby("_resolved_month").size().reindex(months, fill_value=0)
-
-    # ── 图表 1：创建 vs 已解决（分组柱状图）─────────────────────────────────────
-    fig1 = go.Figure()
-    fig1.add_trace(go.Bar(
-        name="创建",
-        x=months,
-        y=created_by_month.tolist(),
-        marker_color="#38bdf8",
-        text=created_by_month.tolist(),
-        textposition="outside",
-        hovertemplate="<b>%{x}</b><br>创建：%{y}<extra></extra>",
-    ))
-    fig1.add_trace(go.Bar(
-        name="已解决",
-        x=months,
-        y=resolved_by_month.tolist(),
-        marker_color="#4ade80",
-        text=resolved_by_month.tolist(),
-        textposition="outside",
-        hovertemplate="<b>%{x}</b><br>已解决：%{y}<extra></extra>",
-    ))
-    fig1.update_layout(
-        title=dict(text="📊 每月创建 vs 已解决 Tickets（近 6 个月）", font=dict(size=15)),
-        barmode="group",
-        xaxis_title="月份",
-        yaxis_title="Ticket 数量",
-        height=420,
-        hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=40, r=40, t=80, b=40),
-    )
-
-    # ── 图表 2：服务构成堆叠柱状图（创建）────────────────────────────────────────
-    fig2 = go.Figure()
-    for cat in _APPSEC_CATEGORY_ORDER:
-        counts = (
-            df_created[df_created["_service"] == cat]
-            .groupby("_created_month")
-            .size()
-            .reindex(months, fill_value=0)
-        )
-        if counts.sum() == 0:
-            continue
-        fig2.add_trace(go.Bar(
-            name=cat,
-            x=months,
-            y=counts.tolist(),
-            marker_color=_APPSEC_COLORS.get(cat, "#94a3b8"),
-            hovertemplate=f"<b>{cat}</b><br>月份：%{{x}}<br>创建：%{{y}}<extra></extra>",
-        ))
-    fig2.update_layout(
-        title=dict(text="📦 每月新建 Tickets 服务构成（近 6 个月）", font=dict(size=15)),
-        barmode="stack",
-        xaxis_title="月份",
-        yaxis_title="Ticket 数量",
-        height=420,
-        hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=40, r=40, t=80, b=40),
-    )
-
-    # ── 图表 3：服务 × 月份热力图（全宽）────────────────────────────────────────
-    z = []
-    for cat in _APPSEC_CATEGORY_ORDER:
-        row_data = [
-            int(df_created[(df_created["_service"] == cat) & (df_created["_created_month"] == m)].shape[0])
-            for m in months
-        ]
-        z.append(row_data)
-
-    fig4 = go.Figure(go.Heatmap(
-        z=z,
-        x=months,
-        y=_APPSEC_CATEGORY_ORDER,
-        colorscale="Blues",
-        text=z,
-        texttemplate="%{text}",
-        hovertemplate="服务：%{y}<br>月份：%{x}<br>创建数：%{z}<extra></extra>",
-        colorbar=dict(title=dict(text="Ticket 数")),
-    ))
-    fig4.update_layout(
-        title=dict(text="🌡️ 服务 × 月份 创建量热力图", font=dict(size=15)),
-        xaxis_title="月份",
-        yaxis_title="服务类型",
-        height=380,
-        margin=dict(l=120, r=60, t=80, b=40),
-        xaxis=dict(side="bottom"),
-    )
-
-    return fig1, fig2, fig4
 
 
 def _render_overdue_metric(
@@ -1781,15 +1437,24 @@ def main() -> None:
                 and st.session_state.get("current_preset_sub") == "AppSec所有service情况"
             ):
                 st.subheader("AppSec 服务类型分布")
-                col1, col2 = st.columns(2)
-                with col1:
-                    appsec_pie = create_appsec_service_pie_chart(selected_df)
-                    st.plotly_chart(appsec_pie, use_container_width=True)
-                with col2:
-                    status_pie = create_appsec_status_chart(selected_df)
-                    st.plotly_chart(status_pie, use_container_width=True)
-                service_bar = create_appsec_service_bar_chart(selected_df)
-                st.plotly_chart(service_bar, use_container_width=True)
+                import requests as _req
+                import streamlit.components.v1 as _cv1
+                import json as _json
+                CHART_SERVER = "http://127.0.0.1:5050"
+                _df_svc = selected_df.copy()
+                _df_svc["_service"] = _df_svc.apply(_classify_appsec_service, axis=1)
+                for _col in ["created", "updated", "resolutiondate", "duedate", "created_date", "resolved_date"]:
+                    if _col in _df_svc.columns:
+                        _df_svc[_col] = _df_svc[_col].astype(str)
+                _json_str = _df_svc.to_json(orient="records", force_ascii=False)
+                _payload_bytes = f'{{"records": {_json_str}}}'.encode("utf-8")
+                try:
+                    _resp = _req.post(f"{CHART_SERVER}/appsec_service_charts", data=_payload_bytes,
+                                      headers={"Content-Type": "application/json"}, timeout=10)
+                    _resp.raise_for_status()
+                    _cv1.html(_resp.text, height=1000, scrolling=True)
+                except Exception as _e:
+                    st.error(f"图表服务未启动：{_e}")
                 st.markdown("---")
 
             # ── AppSec Service By Month 月度对比图表 ─────────────────────────────
@@ -1802,11 +1467,34 @@ def main() -> None:
                     "「创建」= 当月在 JIRA 中新建的 tickets；"
                     "「已解决」= 当月 resolutiondate 有值的 tickets（含更早创建的旧 ticket，反映真实吞吐量）。"
                 )
-                fig_m1, fig_m2, fig_m4 = create_appsec_monthly_comparison_charts(selected_df)
-
-                st.plotly_chart(fig_m1, use_container_width=True)
-                st.plotly_chart(fig_m2, use_container_width=True)
-                st.plotly_chart(fig_m4, use_container_width=True)
+                import requests as _req
+                import streamlit.components.v1 as _cv1
+                import json as _json
+                import datetime as _dt
+                CHART_SERVER = "http://127.0.0.1:5050"
+                _today = _dt.date.today()
+                _months = []
+                for _i in range(5, -1, -1):
+                    _m = _today.month - _i
+                    _y = _today.year
+                    if _m <= 0:
+                        _m += 12
+                        _y -= 1
+                    _months.append(f"{_y}-{_m:02d}")
+                _df_mon = selected_df.copy()
+                _df_mon["_service"] = _df_mon.apply(_classify_appsec_service, axis=1)
+                for _col in ["created", "updated", "resolutiondate", "duedate", "created_date", "resolved_date"]:
+                    if _col in _df_mon.columns:
+                        _df_mon[_col] = _df_mon[_col].astype(str)
+                _json_str = _df_mon.to_json(orient="records", force_ascii=False)
+                _payload_bytes = f'{{"records": {_json_str}, "months": {_json.dumps(_months)}}}'.encode("utf-8")
+                try:
+                    _resp = _req.post(f"{CHART_SERVER}/appsec_monthly_charts", data=_payload_bytes,
+                                      headers={"Content-Type": "application/json"}, timeout=10)
+                    _resp.raise_for_status()
+                    _cv1.html(_resp.text, height=1300, scrolling=True)
+                except Exception as _e:
+                    st.error(f"图表服务未启动：{_e}")
                 st.markdown("---")
 
             # ── 调用 Flask 图表服务渲染 ECharts ──────────────────────────

@@ -16,6 +16,18 @@ app = Flask(__name__)
 # ── ECharts CDN ──────────────────────────────────────────────────────────────
 ECHARTS_CDN = "https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"
 
+# ── AppSec 常量（与 app.py 保持同步）──────────────────────────────────────────
+_APPSEC_COLORS_MAP = {
+    "SAST": "#a78bfa", "Pentest": "#38bdf8", "BugBounty": "#4ade80",
+    "Container Security": "#f59e0b", "DAST": "#fb923c", "Ad-hoc": "#6366f1", "Other": "#94a3b8",
+}
+_APPSEC_CAT_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Ad-hoc", "Other"]
+_APPSEC_STATUS_COLORS = {
+    "Open": "#38bdf8", "Accepted": "#4ade80", "Closed": "#94a3b8",
+    "Reopen": "#f87171", "Other": "#fb923c",
+}
+_APPSEC_STATUS_ORDER = ["Open", "Accepted", "Closed", "Reopen", "Other"]
+
 # ── 公共 HTML 模板 ─────────────────────────────────────────────────────────────
 PAGE_TEMPLATE = """<!DOCTYPE html>
 <html>
@@ -57,6 +69,33 @@ def _df_from_request() -> pd.DataFrame:
     if "cycle_time_days" in df.columns:
         df["cycle_time_days"] = pd.to_numeric(df["cycle_time_days"], errors="coerce")
     return df
+
+
+def _classify_appsec_status(status_str: str) -> str:
+    """Map raw JIRA status string to Open/Accepted/Closed/Reopen/Other.
+    IMPORTANT: check 'reopen' before 'open' to avoid substring false match."""
+    s = str(status_str or "").lower()
+    if "reopen" in s:
+        return "Reopen"
+    if "accepted" in s:
+        return "Accepted"
+    if "closed" in s or "done" in s or "resolved" in s:
+        return "Closed"
+    if "open" in s or "to do" in s or "in progress" in s or "new" in s:
+        return "Open"
+    return "Other"
+
+
+def _parse_request():
+    """Returns (df, raw_data_dict). raw_data_dict may contain 'months' etc."""
+    data = request.get_json(force=True)
+    df = pd.DataFrame(data.get("records", []))
+    for col in ["created", "updated", "resolutiondate", "duedate", "created_date", "resolved_date"]:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors="coerce")
+    if "cycle_time_days" in df.columns:
+        df["cycle_time_days"] = pd.to_numeric(df["cycle_time_days"], errors="coerce")
+    return df, data
 
 
 def _safe_list(series: pd.Series) -> list:
@@ -235,6 +274,286 @@ def _pie_option(df: pd.DataFrame) -> dict:
     }
 
 
+
+
+# ── AppSec ECharts 脚本构建函数 ─────────────────────────────────────────────
+
+
+def _appsec_pie_scripts(cid: str, labels: list, values: list, colors: list,
+                        ticket_map: dict, title: str) -> str:
+    """Return a JS IIFE that renders an ECharts donut pie with ticket tooltip."""
+    MAX_DISPLAY = 15
+    # Build tooltip lines per label (capped)
+    tooltip_lines = {}
+    for lbl, keys in ticket_map.items():
+        lines = keys[:MAX_DISPLAY]
+        text = "\\n".join(lines)
+        if len(keys) > MAX_DISPLAY:
+            text += f"\\n...以及另外 {len(keys) - MAX_DISPLAY} 条"
+        tooltip_lines[lbl] = text
+
+    ticket_map_json = json.dumps(tooltip_lines, ensure_ascii=False)
+    option = {
+        "backgroundColor": "transparent",
+        "title": {"text": title, "left": "center", "textStyle": {"color": "#ccc", "fontSize": 13}},
+        "tooltip": {"trigger": "item"},
+        "legend": {"orient": "vertical", "left": "left", "textStyle": {"color": "#ccc"}, "top": "middle"},
+        "series": [{
+            "type": "pie",
+            "radius": ["35%", "65%"],
+            "center": ["60%", "55%"],
+            "data": [{"name": l, "value": v} for l, v in zip(labels, values)],
+            "color": colors,
+            "itemStyle": {"borderRadius": 4},
+            "label": {"color": "#ccc", "formatter": "{b}: {c}"},
+        }],
+    }
+    option_json = json.dumps(option, ensure_ascii=False)
+    return f"""(function() {{
+  var ticketMap = {ticket_map_json};
+  var opt = {option_json};
+  opt.tooltip = {{
+    trigger: 'item',
+    formatter: function(params) {{
+      var pct = (params.percent || 0).toFixed(1);
+      var tickets = ticketMap[params.name] || '';
+      var lines = tickets ? tickets.split('\\n').join('<br>') : '';
+      return '<b>' + params.name + '</b><br>数量：' + params.value + '  占比：' + pct + '%'
+        + (lines ? '<br>─────────────────<br>' + lines : '');
+    }}
+  }};
+  var chart = echarts.init(document.getElementById('{cid}'), 'dark');
+  chart.setOption(opt);
+  window.addEventListener('resize', function() {{ chart.resize(); }});
+}})();
+"""
+
+
+def _appsec_service_bar_scripts(cid: str, df: pd.DataFrame) -> str:
+    """Return a JS IIFE that renders a stacked bar (resolved vs unresolved) with fix rate labels."""
+    if df.empty or "_service" not in df.columns:
+        option = {"title": {"text": "暂无数据", "left": "center", "top": "center",
+                            "textStyle": {"color": "#888"}}}
+        return f"""(function() {{
+  var chart = echarts.init(document.getElementById('{cid}'), 'dark');
+  chart.setOption({json.dumps(option)});
+  window.addEventListener('resize', function() {{ chart.resize(); }});
+}})();
+"""
+    active_cats = [c for c in _APPSEC_CAT_ORDER if c in df["_service"].values]
+    resolved_vals = []
+    unresolved_vals = []
+    rate_labels = []
+    bar_colors = []
+    for cat in active_cats:
+        sub = df[df["_service"] == cat]
+        total = len(sub)
+        res = int(sub["resolutiondate"].notna().sum()) if "resolutiondate" in df.columns else 0
+        unres = total - res
+        resolved_vals.append(res)
+        unresolved_vals.append(unres)
+        rate_labels.append(f"{res / total * 100:.0f}%" if total > 0 else "0%")
+        bar_colors.append(_APPSEC_COLORS_MAP.get(cat, "#94a3b8"))
+
+    rate_labels_json = json.dumps(rate_labels, ensure_ascii=False)
+    option = {
+        "backgroundColor": "transparent",
+        "title": {"text": "各服务 Ticket 数量与修复率", "left": "center",
+                  "textStyle": {"color": "#ccc", "fontSize": 13}},
+        "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
+        "legend": {"data": ["已修复", "未修复"], "textStyle": {"color": "#ccc"},
+                   "top": 30, "right": 10},
+        "grid": {"left": "5%", "right": "5%", "bottom": "8%", "top": "18%", "containLabel": True},
+        "xAxis": {"type": "category", "data": active_cats,
+                  "axisLabel": {"color": "#ccc", "rotate": 20}},
+        "yAxis": {"type": "value", "axisLabel": {"color": "#ccc"},
+                  "splitLine": {"lineStyle": {"color": "rgba(255,255,255,0.1)"}}},
+        "series": [
+            {
+                "name": "已修复",
+                "type": "bar",
+                "stack": "total",
+                "data": [{"value": v, "itemStyle": {"color": bar_colors[i]}}
+                         for i, v in enumerate(resolved_vals)],
+                "label": {"show": False},
+            },
+            {
+                "name": "未修复",
+                "type": "bar",
+                "stack": "total",
+                "data": unresolved_vals,
+                "itemStyle": {"color": "#64748b"},
+                "label": {"show": True, "position": "top", "color": "#f8fafc", "fontSize": 13},
+            },
+        ],
+    }
+    option_json = json.dumps(option, ensure_ascii=False)
+    return f"""(function() {{
+  var rateLabels = {rate_labels_json};
+  var opt = {option_json};
+  opt.series[1].label.formatter = function(params) {{ return rateLabels[params.dataIndex]; }};
+  var chart = echarts.init(document.getElementById('{cid}'), 'dark');
+  chart.setOption(opt);
+  window.addEventListener('resize', function() {{ chart.resize(); }});
+}})();
+"""
+
+
+def _appsec_monthly_bar_scripts(cid: str, months: list, created_vals: list,
+                                 resolved_vals: list) -> str:
+    """Return a JS IIFE for a grouped bar chart of created vs resolved per month."""
+    option = {
+        "backgroundColor": "transparent",
+        "title": {"text": "每月创建 vs 已解决 Tickets（近 6 个月）", "left": "center",
+                  "textStyle": {"color": "#ccc", "fontSize": 13}},
+        "tooltip": {"trigger": "axis"},
+        "legend": {"data": ["创建", "已解决"], "textStyle": {"color": "#ccc"}, "top": 30},
+        "grid": {"left": "5%", "right": "5%", "bottom": "8%", "top": "18%", "containLabel": True},
+        "xAxis": {"type": "category", "data": months,
+                  "axisLabel": {"color": "#ccc", "rotate": 20}},
+        "yAxis": {"type": "value", "axisLabel": {"color": "#ccc"},
+                  "splitLine": {"lineStyle": {"color": "rgba(255,255,255,0.1)"}}},
+        "series": [
+            {"name": "创建", "type": "bar", "data": created_vals,
+             "itemStyle": {"color": "#38bdf8"},
+             "label": {"show": True, "position": "top", "color": "#fff"}},
+            {"name": "已解决", "type": "bar", "data": resolved_vals,
+             "itemStyle": {"color": "#4ade80"},
+             "label": {"show": True, "position": "top", "color": "#fff"}},
+        ],
+    }
+    option_json = json.dumps(option, ensure_ascii=False)
+    return f"""(function() {{
+  var opt = {option_json};
+  var chart = echarts.init(document.getElementById('{cid}'), 'dark');
+  chart.setOption(opt);
+  window.addEventListener('resize', function() {{ chart.resize(); }});
+}})();
+"""
+
+
+def _appsec_monthly_stacked_scripts(cid: str, months: list, df: pd.DataFrame) -> str:
+    """Return a JS IIFE for a stacked bar chart of service composition per month."""
+    if df.empty or "_service" not in df.columns:
+        option = {"title": {"text": "暂无数据", "left": "center", "top": "center",
+                            "textStyle": {"color": "#888"}}}
+        return f"""(function() {{
+  var chart = echarts.init(document.getElementById('{cid}'), 'dark');
+  chart.setOption({json.dumps(option)});
+  window.addEventListener('resize', function() {{ chart.resize(); }});
+}})();
+"""
+    col = "_created_month"
+    series = []
+    for cat in _APPSEC_CAT_ORDER:
+        if col not in df.columns:
+            counts = [0] * len(months)
+        else:
+            sub = df[df["_service"] == cat]
+            grp = sub.groupby(col).size()
+            counts = [int(grp.get(m, 0)) for m in months]
+        if sum(counts) == 0:
+            continue
+        series.append({
+            "name": cat,
+            "type": "bar",
+            "stack": "total",
+            "data": counts,
+            "itemStyle": {"color": _APPSEC_COLORS_MAP.get(cat, "#94a3b8")},
+        })
+    if not series:
+        option = {"title": {"text": "暂无数据", "left": "center", "top": "center",
+                            "textStyle": {"color": "#888"}}}
+        return f"""(function() {{
+  var chart = echarts.init(document.getElementById('{cid}'), 'dark');
+  chart.setOption({json.dumps(option)});
+  window.addEventListener('resize', function() {{ chart.resize(); }});
+}})();
+"""
+    legend_data = [s["name"] for s in series]
+    option = {
+        "backgroundColor": "transparent",
+        "title": {"text": "每月新建 Tickets 服务构成（近 6 个月）", "left": "center",
+                  "textStyle": {"color": "#ccc", "fontSize": 13}},
+        "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
+        "legend": {"data": legend_data, "textStyle": {"color": "#ccc"}, "top": 30},
+        "grid": {"left": "5%", "right": "5%", "bottom": "8%", "top": "22%", "containLabel": True},
+        "xAxis": {"type": "category", "data": months,
+                  "axisLabel": {"color": "#ccc", "rotate": 20}},
+        "yAxis": {"type": "value", "axisLabel": {"color": "#ccc"},
+                  "splitLine": {"lineStyle": {"color": "rgba(255,255,255,0.1)"}}},
+        "series": series,
+    }
+    option_json = json.dumps(option, ensure_ascii=False)
+    return f"""(function() {{
+  var opt = {option_json};
+  var chart = echarts.init(document.getElementById('{cid}'), 'dark');
+  chart.setOption(opt);
+  window.addEventListener('resize', function() {{ chart.resize(); }});
+}})();
+"""
+
+
+def _appsec_monthly_heatmap_scripts(cid: str, months: list, df: pd.DataFrame) -> str:
+    """Return a JS IIFE for a heatmap of service × month creation counts."""
+    services = _APPSEC_CAT_ORDER
+    col = "_created_month"
+    heat_data = []
+    if not df.empty and "_service" in df.columns and col in df.columns:
+        for row_idx, cat in enumerate(services):
+            for col_idx, m in enumerate(months):
+                count = int(((df["_service"] == cat) & (df[col] == m)).sum())
+                heat_data.append([col_idx, row_idx, count])
+    max_val = max((d[2] for d in heat_data), default=1) or 1
+
+    months_json = json.dumps(months, ensure_ascii=False)
+    services_json = json.dumps(services, ensure_ascii=False)
+    heat_data_json = json.dumps(heat_data)
+    option = {
+        "backgroundColor": "transparent",
+        "title": {"text": "服务 × 月份 创建量热力图", "left": "center",
+                  "textStyle": {"color": "#ccc", "fontSize": 13}},
+        "grid": {"left": "20%", "right": "10%", "bottom": "10%", "top": "15%"},
+        "xAxis": {"type": "category", "data": months,
+                  "axisLabel": {"color": "#ccc", "rotate": 20},
+                  "splitArea": {"show": True}},
+        "yAxis": {"type": "category", "data": services,
+                  "axisLabel": {"color": "#ccc"},
+                  "splitArea": {"show": True}},
+        "visualMap": {
+            "min": 0, "max": max_val,
+            "calculable": True,
+            "orient": "horizontal",
+            "left": "center",
+            "bottom": "1%",
+            "inRange": {"color": ["#1a1c28", "#38bdf8"]},
+            "textStyle": {"color": "#ccc"},
+        },
+        "series": [{
+            "type": "heatmap",
+            "data": heat_data,
+            "label": {"show": True, "color": "#fff"},
+        }],
+    }
+    option_json = json.dumps(option, ensure_ascii=False)
+    return f"""(function() {{
+  var months = {months_json};
+  var services = {services_json};
+  var opt = {option_json};
+  opt.tooltip = {{
+    formatter: function(params) {{
+      var m = months[params.data[0]];
+      var s = services[params.data[1]];
+      return s + ' / ' + m + '<br>创建数：' + params.data[2];
+    }}
+  }};
+  var chart = echarts.init(document.getElementById('{cid}'), 'dark');
+  chart.setOption(opt);
+  window.addEventListener('resize', function() {{ chart.resize(); }});
+}})();
+"""
+
+
 # ── 路由 ──────────────────────────────────────────────────────────────────────
 
 @app.route("/health")
@@ -285,6 +604,114 @@ def charts():
         body=divs,
         scripts=scripts,
     )
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+@app.route("/appsec_service_charts", methods=["POST"])
+def appsec_service_charts():
+    """AppSec service pie + status pie + service stacked bar."""
+    df, _ = _parse_request()
+
+    # Build service ticket_map
+    svc_ticket_map: dict[str, list] = {c: [] for c in _APPSEC_CAT_ORDER}
+    status_ticket_map: dict[str, list] = {s: [] for s in _APPSEC_STATUS_ORDER}
+
+    for _, row in df.iterrows():
+        key = str(row.get("key") or "")
+        svc = str(row.get("_service") or "Other")
+        if svc not in svc_ticket_map:
+            svc = "Other"
+        svc_ticket_map[svc].append(key)
+
+        st_cat = _classify_appsec_status(str(row.get("status") or ""))
+        status_ticket_map[st_cat].append(key)
+
+    # Service pie data
+    svc_active = [c for c in _APPSEC_CAT_ORDER if svc_ticket_map[c]]
+    svc_values = [len(svc_ticket_map[c]) for c in svc_active]
+    svc_colors = [_APPSEC_COLORS_MAP.get(c, "#94a3b8") for c in svc_active]
+
+    # Status pie data
+    st_active = [s for s in _APPSEC_STATUS_ORDER if status_ticket_map[s]]
+    st_values = [len(status_ticket_map[s]) for s in st_active]
+    st_colors = [_APPSEC_STATUS_COLORS.get(s, "#94a3b8") for s in st_active]
+
+    scripts = (
+        _appsec_pie_scripts("svc_pie", svc_active, svc_values, svc_colors,
+                            {c: svc_ticket_map[c] for c in svc_active}, "服务类型分布")
+        + _appsec_pie_scripts("status_pie", st_active, st_values, st_colors,
+                              {s: status_ticket_map[s] for s in st_active}, "修复状态分布")
+        + _appsec_service_bar_scripts("svc_bar", df)
+    )
+
+    body = (
+        '<div class="grid grid-2">'
+        '<div class="chart-box"><div class="chart-title">服务类型分布</div>'
+        '<div id="svc_pie" style="width:100%;height:300px;"></div></div>'
+        '<div class="chart-box"><div class="chart-title">修复状态分布</div>'
+        '<div id="status_pie" style="width:100%;height:300px;"></div></div>'
+        '</div>'
+        '<div class="chart-box" style="margin-top:16px">'
+        '<div class="chart-title">各服务 Ticket 数量与修复率</div>'
+        '<div id="svc_bar" style="width:100%;height:350px;"></div>'
+        '</div>'
+    )
+
+    html = PAGE_TEMPLATE.format(echarts_cdn=ECHARTS_CDN, body=body, scripts=scripts)
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+@app.route("/appsec_monthly_charts", methods=["POST"])
+def appsec_monthly_charts():
+    """AppSec monthly: grouped bar + stacked by service + heatmap."""
+    df, data = _parse_request()
+    months = data.get("months", [])
+
+    # Compute _created_month if not already present
+    if not df.empty and "created" in df.columns:
+        df["_created_month"] = (
+            pd.to_datetime(df["created"], errors="coerce")
+            .dt.to_period("M").astype(str)
+        )
+    else:
+        df["_created_month"] = ""
+
+    if not df.empty and "resolutiondate" in df.columns:
+        df["_resolved_month"] = (
+            pd.to_datetime(df["resolutiondate"], errors="coerce")
+            .dt.to_period("M").astype(str)
+        )
+    else:
+        df["_resolved_month"] = ""
+
+    df_created = df[df["_created_month"].isin(months)] if months else df
+    df_resolved = df[df["_resolved_month"].isin(months)] if months else df
+
+    if months:
+        created_vals = [int((df_created["_created_month"] == m).sum()) for m in months]
+        resolved_vals = [int((df_resolved["_resolved_month"] == m).sum()) for m in months]
+    else:
+        created_vals = []
+        resolved_vals = []
+
+    scripts = (
+        _appsec_monthly_bar_scripts("mon_bar", months, created_vals, resolved_vals)
+        + _appsec_monthly_stacked_scripts("mon_stacked", months, df_created)
+        + _appsec_monthly_heatmap_scripts("mon_heat", months, df_created)
+    )
+
+    body = (
+        '<div class="chart-box"><div class="chart-title">每月创建 vs 已解决 Tickets</div>'
+        '<div id="mon_bar" style="width:100%;height:400px;"></div></div>'
+        '<div class="chart-box" style="margin-top:16px">'
+        '<div class="chart-title">每月新建 Tickets 服务构成</div>'
+        '<div id="mon_stacked" style="width:100%;height:400px;"></div></div>'
+        '<div class="chart-box" style="margin-top:16px">'
+        '<div class="chart-title">服务 × 月份 创建量热力图</div>'
+        '<div id="mon_heat" style="width:100%;height:420px;"></div></div>'
+    )
+
+    html = PAGE_TEMPLATE.format(echarts_cdn=ECHARTS_CDN, body=body, scripts=scripts)
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
