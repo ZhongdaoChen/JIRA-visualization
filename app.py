@@ -801,6 +801,144 @@ def _render_overdue_metric(
     _cv1.html(card_html, height=90)
 
 
+def _render_open_metric(
+    label: str,
+    open_count: int,
+    open_keys: list,
+    jira_base_url: str,
+) -> None:
+    """
+    渲染「待解决数」KPI 卡片。
+    有待解决 ticket 时，鼠标悬浮通过 JS 将浮层注入父页面 DOM，
+    显示可点击的 ticket 链接列表。
+    """
+    import streamlit.components.v1 as _cv1
+    import json
+
+    if open_count == 0 or not open_keys:
+        st.metric(label=label, value=open_count)
+        return
+
+    base = jira_base_url.rstrip("/")
+    links_data = json.dumps([
+        {"key": item["key"], "status": item["status"], "url": f"{base}/browse/{item['key']}"}
+        for item in open_keys
+    ])
+
+    card_html = f"""
+<style>
+  body {{ margin: 0; background: transparent; }}
+  .op-label {{
+    font-size: 0.875rem;
+    color: #888;
+    margin-bottom: 2px;
+    font-family: sans-serif;
+  }}
+  .op-value {{
+    font-size: 2rem;
+    font-weight: 700;
+    color: #e6a817;
+    font-family: sans-serif;
+    cursor: default;
+  }}
+  .op-hint {{
+    font-size: 0.70rem;
+    color: #aaa;
+    font-family: sans-serif;
+    margin-top: 1px;
+  }}
+</style>
+
+<div id="op-card">
+  <div class="op-label">{label}</div>
+  <div class="op-value">{open_count}</div>
+  <div class="op-hint">🖱 悬浮查看 tickets</div>
+</div>
+
+<script>
+(function() {{
+  const LINKS = {links_data};
+  const OVERLAY_ID = 'op-parent-overlay';
+  const card = document.getElementById('op-card');
+  const iframe = window.frameElement;
+
+  let overlay = parent.document.getElementById(OVERLAY_ID);
+  if (!overlay) {{
+    const s = parent.document.createElement('style');
+    s.textContent = `
+      #${{OVERLAY_ID}} {{
+        position: fixed;
+        z-index: 2147483647;
+        background: #1a1a2e;
+        border: 1px solid #555;
+        border-radius: 8px;
+        padding: 8px 12px;
+        max-height: 280px;
+        min-width: 150px;
+        max-width: 300px;
+        overflow-y: auto;
+        box-shadow: 0 6px 24px rgba(0,0,0,0.7);
+        display: none;
+        font-family: sans-serif;
+      }}
+      #${{OVERLAY_ID}} .op-title {{
+        font-size: 11px;
+        color: #aaa;
+        margin-bottom: 6px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }}
+      #${{OVERLAY_ID}} a {{
+        display: block;
+        color: #4fc3f7;
+        text-decoration: none;
+        font-size: 13px;
+        padding: 3px 0;
+        white-space: nowrap;
+      }}
+      #${{OVERLAY_ID}} a:hover {{
+        color: #81d4fa;
+        text-decoration: underline;
+      }}
+    `;
+    parent.document.head.appendChild(s);
+    overlay = parent.document.createElement('div');
+    overlay.id = OVERLAY_ID;
+    parent.document.body.appendChild(overlay);
+  }}
+
+  overlay.innerHTML =
+    '<div class="op-title">Open Tickets (' + LINKS.length + ')</div>' +
+    LINKS.map(l => `<a href="${{l.url}}" target="_blank">${{l.key}} - ${{l.status}}</a>`).join('');
+
+  function show() {{
+    const r = iframe.getBoundingClientRect();
+    const spaceBelow = parent.window.innerHeight - r.bottom;
+    if (spaceBelow > 160 || spaceBelow > r.top) {{
+      overlay.style.top  = (r.bottom + 6) + 'px';
+    }} else {{
+      overlay.style.top  = (r.top - overlay.offsetHeight - 6) + 'px';
+    }}
+    overlay.style.left = r.left + 'px';
+    overlay.style.display = 'block';
+  }}
+
+  function hide() {{
+    setTimeout(function() {{
+      if (!overlay.matches(':hover')) overlay.style.display = 'none';
+    }}, 120);
+  }}
+
+  card.addEventListener('mouseenter', show);
+  card.addEventListener('mouseleave', hide);
+  overlay.addEventListener('mouseleave', hide);
+}})();
+</script>
+"""
+    _cv1.html(card_html, height=90)
+
+
 def main() -> None:
     st.set_page_config(page_title="JIRA 可视化看板", layout="wide")
 
@@ -844,7 +982,7 @@ def main() -> None:
             "kpi_title": "AppSec KPI 指标看板",
             "kpi_total": "总 Issue 数",
             "kpi_resolved": "已解决数",
-            "kpi_closed": "已关闭数",
+            "kpi_closed": "待解决数",
             "kpi_resolution_rate": "解决率",
             "kpi_avg_cycle": "平均周期",
             "kpi_critical_high": "Critical/High",
@@ -889,7 +1027,7 @@ def main() -> None:
             "kpi_title": "AppSec KPI Dashboard",
             "kpi_total": "Total Issues",
             "kpi_resolved": "Resolved",
-            "kpi_closed": "Closed",
+            "kpi_closed": "Open Issues",
             "kpi_resolution_rate": "Resolution Rate",
             "kpi_avg_cycle": "Avg Cycle Time",
             "kpi_critical_high": "Critical/High",
@@ -1013,6 +1151,10 @@ def main() -> None:
             },
             "SAST": {
                 "SAST": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND reporter = "Shervin.Aghdaei@adidas.com" AND assignee in ("Jesse.Zhang@adidas.com", "Du.Chen@adidas.com", "Kiba.Yang@adidas.com", "kiba.Yang@adidas.com", "John.Fu@adidas.com", "Zone.Tian@adidas.com", "David.Wei@adidas.com", "Spencer.Shao@adidas.com", "Laura.Yuan@adidas.com", "Jane.Lu@adidas.com", "Newman.Xu@adidas.com") ORDER BY created DESC',
+            },
+            "Cloud Security program- Wiz": {
+                "Overall Wiz Issue related finding tickets": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND (labels = "GCA-Issues-Q1-Critical" OR labels = "GCA_AppSec") ORDER BY created DESC',
+                "Wiz Issue - Secrets finding tickets": 'project = "GINFOSEC" AND created >= "2026-01-01" AND created <= "2026-12-31" AND labels = "GCA_AppSec" AND labels = "Wiz_SecretData" ORDER BY created DESC',
             },
         }
 
@@ -1414,7 +1556,13 @@ def main() -> None:
             kpi_cols = st.columns(4)
             kpi_cols[0].metric(label=t["kpi_total"], value=kpi_result.total_count)
             kpi_cols[1].metric(label=t["kpi_resolved"], value=kpi_result.resolved_count)
-            kpi_cols[2].metric(label=t["kpi_closed"], value=kpi_result.closed_count)
+            with kpi_cols[2]:
+                _render_open_metric(
+                    label=t["kpi_closed"],
+                    open_count=kpi_result.open_count,
+                    open_keys=kpi_result.open_keys,
+                    jira_base_url=st.session_state.get("jira_base_url", ""),
+                )
             kpi_cols[3].metric(label=t["kpi_resolution_rate"], value=f"{kpi_result.resolution_rate:.1f}%")
 
             cycle_cols = st.columns(4)

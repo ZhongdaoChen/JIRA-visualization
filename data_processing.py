@@ -109,7 +109,8 @@ class KPIResult:
     """KPI 指标计算结果"""
     total_count: int  # 总 issue 数
     resolved_count: int  # 已解决数
-    closed_count: int  # 已关闭数
+    open_count: int  # 待解决数（status 不在 closed/done/resolved 中）
+    open_keys: List[dict]  # 待解决 ticket 列表，每项含 key 和 status
     resolution_rate: float  # 解决率 (0-100)
     avg_cycle_days: Optional[float]  # 平均解决周期
     critical_high_count: int  # priority 为 Critical 或 High 的数量
@@ -131,16 +132,26 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
     """
     total_count = len(df)
 
-    # 已解决：有 resolutiondate 的
-    resolved_count = df["resolutiondate"].notna().sum() if "resolutiondate" in df.columns else 0
-
-    # 已关闭：status 为 Closed/Done/Resolved 等
+    # 已解决：status 为 Closed/Done/Resolved 等
     closed_statuses = {"closed", "done", "resolved", "已关闭", "已完成", "已解决"}
-    closed_count = 0
+    resolved_count = 0
     if status_column in df.columns:
-        closed_count = df[status_column].apply(
+        resolved_count = int(df[status_column].apply(
             lambda x: str(x).lower() in closed_statuses if x else False
-        ).sum()
+        ).sum())
+
+    # 待解决：status 不在 closed/done/resolved 等中
+    open_count = 0
+    open_keys: List[dict] = []
+    if status_column in df.columns:
+        for _, row in df.iterrows():
+            st_val = str(row.get(status_column, "") or "").lower()
+            if st_val not in closed_statuses:
+                open_count += 1
+                key = row.get("key", "")
+                status_display = str(row.get(status_column, "") or "").upper()
+                if key:
+                    open_keys.append({"key": key, "status": status_display})
 
     # 解决率
     resolution_rate = (resolved_count / total_count * 100) if total_count > 0 else 0.0
@@ -190,7 +201,8 @@ def calculate_kpis(df: pd.DataFrame, status_column: str = "status") -> KPIResult
     return KPIResult(
         total_count=total_count,
         resolved_count=resolved_count,
-        closed_count=closed_count,
+        open_count=open_count,
+        open_keys=sorted(open_keys, key=lambda x: x["key"]),
         resolution_rate=resolution_rate,
         avg_cycle_days=avg_cycle_days,
         critical_high_count=critical_high_count,
