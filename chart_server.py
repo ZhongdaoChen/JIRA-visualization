@@ -16,15 +16,55 @@ app = Flask(__name__)
 # ── ECharts CDN ──────────────────────────────────────────────────────────────
 ECHARTS_CDN = "https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"
 
+# ── 公共调色板 ─────────────────────────────────────────────────────────────────
+PALETTE = {
+    "blue":    "#38bdf8",
+    "green":   "#4ade80",
+    "purple":  "#a78bfa",
+    "indigo":  "#6366f1",
+    "orange":  "#fb923c",
+    "red":     "#f87171",
+    "amber":   "#f59e0b",
+    "teal":    "#34d399",
+    "pink":    "#f472b6",
+    "slate":   "#94a3b8",
+    "dark":    "#64748b",
+    "yellow":  "#facc15",
+}
+
+# 通用饼图/分类图轮换顺序
+PALETTE_CYCLE = [
+    PALETTE["indigo"], PALETTE["blue"],  PALETTE["green"],
+    PALETTE["orange"], PALETTE["red"],   PALETTE["purple"],
+    PALETTE["yellow"], PALETTE["teal"],  PALETTE["pink"],
+    PALETTE["slate"],
+]
+
+def _grad(top: str, bottom: str) -> dict:
+    """返回 ECharts 竖向线性渐变 dict（top → bottom）。"""
+    return {
+        "type": "linear", "x": 0, "y": 0, "x2": 0, "y2": 1,
+        "colorStops": [{"offset": 0, "color": top}, {"offset": 1, "color": bottom}],
+    }
+
 # ── AppSec 常量（与 app.py 保持同步）──────────────────────────────────────────
 _APPSEC_COLORS_MAP = {
-    "SAST": "#a78bfa", "Pentest": "#38bdf8", "BugBounty": "#4ade80",
-    "Container Security": "#f59e0b", "DAST": "#fb923c", "Ad-hoc": "#6366f1", "Other": "#94a3b8",
+    "SAST":               PALETTE["purple"],
+    "Pentest":            PALETTE["blue"],
+    "BugBounty":          PALETTE["green"],
+    "Container Security": PALETTE["amber"],
+    "DAST":               PALETTE["orange"],
+    "Wiz":                PALETTE["teal"],
+    "Ad-hoc":             PALETTE["indigo"],
+    "Other":              PALETTE["slate"],
 }
-_APPSEC_CAT_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Ad-hoc", "Other"]
+_APPSEC_CAT_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Wiz", "Ad-hoc", "Other"]
 _APPSEC_STATUS_COLORS = {
-    "Open": "#38bdf8", "Accepted": "#4ade80", "Closed": "#94a3b8",
-    "Reopen": "#f87171", "Other": "#fb923c",
+    "Open":     PALETTE["blue"],
+    "Accepted": PALETTE["green"],
+    "Closed":   PALETTE["slate"],
+    "Reopen":   PALETTE["red"],
+    "Other":    PALETTE["orange"],
 }
 _APPSEC_STATUS_ORDER = ["Open", "Accepted", "Closed", "Reopen", "Other"]
 
@@ -35,15 +75,15 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 <meta charset="utf-8">
 <style>
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ background: #0e1117; color: #fafafa; font-family: sans-serif; padding: 12px; }}
+  body {{ background: transparent; color: #fafafa; font-family: sans-serif; padding: 12px; }}
   .grid {{ display: grid; gap: 16px; }}
   .grid-2 {{ grid-template-columns: 1fr 1fr; }}
-  .chart-box {{ background: #1a1c28; border-radius: 10px; padding: 12px; }}
+  .chart-box {{ background: transparent; border-radius: 10px; padding: 12px; }}
   .chart-title {{ font-size: 13px; color: #aaa; margin-bottom: 6px; }}
   .chart {{ width: 100%; height: 300px; }}
   .chart-wide {{ width: 100%; height: 320px; }}
   .kpi-row {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }}
-  .kpi-card {{ background: #1a1c28; border-radius: 10px; padding: 14px 10px; text-align: center; }}
+  .kpi-card {{ background: transparent; border-radius: 10px; padding: 14px 10px; text-align: center; }}
   .kpi-label {{ font-size: 11px; color: #888; margin-bottom: 4px; }}
   .kpi-value {{ font-size: 22px; font-weight: bold; color: #fff; }}
   .kpi-value.rate {{ color: #4ade80; }}
@@ -115,10 +155,7 @@ def _status_bar_option(df: pd.DataFrame) -> dict:
         "series": [{
             "type": "bar",
             "data": counts.values.tolist(),
-            "itemStyle": {"color": {
-                "type": "linear", "x": 0, "y": 0, "x2": 0, "y2": 1,
-                "colorStops": [{"offset": 0, "color": "#6366f1"}, {"offset": 1, "color": "#3b82f6"}]
-            }},
+            "itemStyle": {"color": _grad(PALETTE["indigo"], PALETTE["blue"])},
             "label": {"show": True, "position": "top", "color": "#fff"}
         }]
     }
@@ -150,7 +187,7 @@ def _cycle_histogram_option(df: pd.DataFrame) -> dict:
         "yAxis": {"type": "value", "axisLabel": {"color": "#ccc"}},
         "series": [
             {"type": "bar", "data": y_data,
-             "itemStyle": {"color": "#38bdf8"},
+             "itemStyle": {"color": _grad(PALETTE["blue"], PALETTE["indigo"])},
              "label": {"show": False}},
         ],
         "markLine": {
@@ -179,10 +216,7 @@ def _assignee_bar_option(df: pd.DataFrame, top_n: int = 15) -> dict:
         "series": [{
             "type": "bar",
             "data": [round(v, 1) for v in agg["mean"]],
-            "itemStyle": {"color": {
-                "type": "linear", "x": 0, "y": 0, "x2": 0, "y2": 1,
-                "colorStops": [{"offset": 0, "color": "#f87171"}, {"offset": 1, "color": "#fb923c"}]
-            }},
+            "itemStyle": {"color": _grad(PALETTE["red"], PALETTE["orange"])},
             "label": {"show": True, "position": "top", "color": "#fff"}
         }]
     }
@@ -211,10 +245,7 @@ def _label_bar_option(df: pd.DataFrame, top_n: int = 15) -> dict:
         "series": [{
             "type": "bar",
             "data": [round(v, 1) for v in agg["days"]],
-            "itemStyle": {"color": {
-                "type": "linear", "x": 0, "y": 0, "x2": 0, "y2": 1,
-                "colorStops": [{"offset": 0, "color": "#a78bfa"}, {"offset": 1, "color": "#818cf8"}]
-            }},
+            "itemStyle": {"color": _grad(PALETTE["purple"], PALETTE["indigo"])},
             "label": {"show": True, "position": "top", "color": "#fff"}
         }]
     }
@@ -247,19 +278,18 @@ def _trend_line_option(df: pd.DataFrame) -> dict:
         "yAxis": {"type": "value", "axisLabel": {"color": "#ccc"}},
         "series": [
             {"name": "创建", "type": "line", "data": c_data,
-             "smooth": True, "lineStyle": {"color": "#38bdf8", "width": 2},
-             "itemStyle": {"color": "#38bdf8"}},
+             "smooth": True, "lineStyle": {"color": PALETTE["blue"], "width": 2},
+             "itemStyle": {"color": PALETTE["blue"]}},
             {"name": "解决", "type": "line", "data": r_data,
-             "smooth": True, "lineStyle": {"color": "#4ade80", "width": 2},
-             "itemStyle": {"color": "#4ade80"}},
+             "smooth": True, "lineStyle": {"color": PALETTE["green"], "width": 2},
+             "itemStyle": {"color": PALETTE["green"]}},
         ]
     }
 
 
 def _pie_option(df: pd.DataFrame) -> dict:
     counts = df["status"].value_counts()
-    palette = ["#6366f1", "#38bdf8", "#4ade80", "#fb923c", "#f87171",
-               "#a78bfa", "#facc15", "#34d399", "#f472b6", "#94a3b8"]
+    palette = PALETTE_CYCLE
     return {
         "backgroundColor": "transparent",
         "tooltip": {"trigger": "item"},
@@ -382,7 +412,7 @@ def _appsec_service_bar_scripts(cid: str, df: pd.DataFrame) -> str:
                 "type": "bar",
                 "stack": "total",
                 "data": unresolved_vals,
-                "itemStyle": {"color": "#64748b"},
+                "itemStyle": {"color": PALETTE["dark"]},
                 "label": {"show": True, "position": "top", "color": "#f8fafc", "fontSize": 13},
             },
         ],
@@ -404,7 +434,7 @@ def _appsec_monthly_bar_scripts(cid: str, months: list, created_vals: list,
     """Return a JS IIFE for a grouped bar chart of created vs resolved per month."""
     option = {
         "backgroundColor": "transparent",
-        "title": {"text": "每月创建 vs 已解决 Tickets（近 6 个月）", "left": "center",
+        "title": {"text": "每月创建 vs 已解决 Tickets（近 3 个月）", "left": "center",
                   "textStyle": {"color": "#ccc", "fontSize": 13}},
         "tooltip": {"trigger": "axis"},
         "legend": {"data": ["创建", "已解决"], "textStyle": {"color": "#ccc"}, "top": 30},
@@ -415,10 +445,10 @@ def _appsec_monthly_bar_scripts(cid: str, months: list, created_vals: list,
                   "splitLine": {"lineStyle": {"color": "rgba(255,255,255,0.1)"}}},
         "series": [
             {"name": "创建", "type": "bar", "data": created_vals,
-             "itemStyle": {"color": "#38bdf8"},
+             "itemStyle": {"color": _grad(PALETTE["blue"], PALETTE["indigo"])},
              "label": {"show": True, "position": "top", "color": "#fff"}},
             {"name": "已解决", "type": "bar", "data": resolved_vals,
-             "itemStyle": {"color": "#4ade80"},
+             "itemStyle": {"color": _grad(PALETTE["green"], PALETTE["teal"])},
              "label": {"show": True, "position": "top", "color": "#fff"}},
         ],
     }
@@ -526,7 +556,7 @@ def _appsec_monthly_heatmap_scripts(cid: str, months: list, df: pd.DataFrame) ->
             "orient": "horizontal",
             "left": "center",
             "bottom": "1%",
-            "inRange": {"color": ["#1a1c28", "#38bdf8"]},
+            "inRange": {"color": ["#1e293b", PALETTE["blue"]]},
             "textStyle": {"color": "#ccc"},
         },
         "series": [{
@@ -666,6 +696,7 @@ def appsec_monthly_charts():
     """AppSec monthly: grouped bar + stacked by service + heatmap."""
     df, data = _parse_request()
     months = data.get("months", [])
+    months_bar = data.get("months_bar", months)  # 创建 vs 已解决用近 3 个月
 
     # Compute _created_month if not already present
     if not df.empty and "created" in df.columns:
@@ -687,15 +718,15 @@ def appsec_monthly_charts():
     df_created = df[df["_created_month"].isin(months)] if months else df
     df_resolved = df[df["_resolved_month"].isin(months)] if months else df
 
-    if months:
-        created_vals = [int((df_created["_created_month"] == m).sum()) for m in months]
-        resolved_vals = [int((df_resolved["_resolved_month"] == m).sum()) for m in months]
+    if months_bar:
+        created_vals = [int((df["_created_month"] == m).sum()) for m in months_bar]
+        resolved_vals = [int((df["_resolved_month"] == m).sum()) for m in months_bar]
     else:
         created_vals = []
         resolved_vals = []
 
     scripts = (
-        _appsec_monthly_bar_scripts("mon_bar", months, created_vals, resolved_vals)
+        _appsec_monthly_bar_scripts("mon_bar", months_bar, created_vals, resolved_vals)
         + _appsec_monthly_stacked_scripts("mon_stacked", months, df_created)
         + _appsec_monthly_heatmap_scripts("mon_heat", months, df_created)
     )

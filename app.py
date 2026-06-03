@@ -54,6 +54,57 @@ def build_jql(
     return " AND ".join(clauses) + " ORDER BY created DESC"
 
 
+def inject_date_filter(jql: str, start_date: str, end_date: str) -> str:
+    """
+    将现有 JQL 中的日期条件替换为用户指定的时间跨度。
+    新条件：(created >= start AND created <= end) OR (resolutiondate >= start AND resolutiondate <= end)
+    """
+    import re
+
+    # 移除复合模式：(created >= "X" OR resolutiondate >= "X")
+    jql = re.sub(
+        r'\(\s*created\s*[><=]+\s*["\'][\d-]+["\']\s*OR\s*resolutiondate\s*[><=]+\s*["\'][\d-]+["\']\s*\)',
+        '',
+        jql,
+        flags=re.IGNORECASE,
+    )
+    # 移除独立的 created 和 resolutiondate 日期条件
+    for field in ("created", "resolutiondate", "duedate"):
+        jql = re.sub(
+            rf'{field}\s*[><=]+\s*["\'][\d-]+["\']',
+            '',
+            jql,
+            flags=re.IGNORECASE,
+        )
+
+    # 清理多余的 AND（包括多个连续 AND、前置 AND、ORDER 前的孤立 AND）
+    jql = re.sub(r'(\bAND\b\s*)+', 'AND ', jql, flags=re.IGNORECASE)
+    jql = re.sub(r'^\s*AND\s+', '', jql.strip(), flags=re.IGNORECASE)
+    jql = re.sub(r'\s+AND\s+(?=ORDER\s+BY)', ' ', jql, flags=re.IGNORECASE)
+    jql = re.sub(r'\s+AND\s*$', '', jql, flags=re.IGNORECASE)
+    # 清理末尾/开头孤立的空括号或空格
+    jql = re.sub(r'\(\s*\)', '', jql)
+    jql = jql.strip()
+
+    date_clause = (
+        f'(created >= "{start_date}" AND created <= "{end_date}"'
+        f' OR resolutiondate >= "{start_date}" AND resolutiondate <= "{end_date}")'
+    )
+
+    # 在 ORDER BY 之前插入，或直接追加
+    order_match = re.search(r'\bORDER\s+BY\b', jql, flags=re.IGNORECASE)
+    if order_match:
+        before = jql[:order_match.start()].rstrip()
+        after = jql[order_match.start():]
+        connector = ' AND ' if before else ''
+        jql = f'{before}{connector}{date_clause} {after}'
+    else:
+        connector = ' AND ' if jql else ''
+        jql = f'{jql}{connector}{date_clause}'
+
+    return jql
+
+
 def sanitize_jql(jql: str) -> str:
     """
     清理 JQL 中的特殊字符，确保 JIRA API 可以正确解析。
@@ -624,13 +675,15 @@ _APPSEC_PENTEST_TAGS = frozenset({"ChaiTin_PenTests"})
 _APPSEC_BUGBOUNTY_TAGS = frozenset({"BugBounty"})
 _APPSEC_CONTAINER_TAGS = frozenset({"GCA-Issues-Q1-Critical", "ContainerSecurity", "ContainerSecurityL1.3"})
 _APPSEC_DAST_TAGS = frozenset({"DAST"})
-_APPSEC_CATEGORY_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Ad-hoc", "Other"]
+_APPSEC_WIZ_TAGS = frozenset({"Wiz", "GCA_AppSec", "Wiz_SecretData", "Wiz_IAM"})
+_APPSEC_CATEGORY_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Wiz", "Ad-hoc", "Other"]
 _APPSEC_COLORS = {
     "SAST": "#a78bfa",
     "Pentest": "#38bdf8",
     "BugBounty": "#4ade80",
     "Container Security": "#f59e0b",
     "DAST": "#fb923c",
+    "Wiz": "#34d399",
     "Ad-hoc": "#6366f1",
     "Other": "#94a3b8",
 }
@@ -652,6 +705,8 @@ def _classify_appsec_service(row) -> str:
         return "Container Security"
     if label_set & _APPSEC_DAST_TAGS:
         return "DAST"
+    if any("wiz" in lbl.lower() for lbl in label_set) or label_set & _APPSEC_WIZ_TAGS:
+        return "Wiz"
     if not label_set:
         return "Ad-hoc"
     return "Other"
@@ -1213,6 +1268,24 @@ def main() -> None:
             if _selected_sub:
                 step1_description = PRESET_CATEGORIES[_selected_cat][_selected_sub]
 
+        # 第三级：时间跨度（起始/结束日期）
+        st.markdown("**🗓 时间跨度**")
+        _date_col1, _date_col2 = st.columns(2)
+        with _date_col1:
+            _preset_start = st.date_input(
+                "起始日期",
+                value=None,
+                key="preset_start_date",
+                help="筛选 created 或 resolutiondate ≥ 此日期",
+            )
+        with _date_col2:
+            _preset_end = st.date_input(
+                "结束日期",
+                value=None,
+                key="preset_end_date",
+                help="筛选 created 或 resolutiondate ≤ 此日期",
+            )
+
         # 分割线：分隔第一步搜索和第二步操作
         if step1_complete:
             st.divider()
@@ -1288,6 +1361,14 @@ def main() -> None:
         jql = cmd.get("jql", "")
         jql = sanitize_jql(jql)
         jql = enforce_project(jql)  # 兜底：确保始终在 GINFOSEC project 下查询
+
+        # 应用时间跨度筛选（未填则默认 2026 全年）
+        _filter_start = st.session_state.get("preset_start_date")
+        _filter_end = st.session_state.get("preset_end_date")
+        _s = str(_filter_start) if _filter_start else "2026-01-01"
+        _e = str(_filter_end) if _filter_end else "2026-12-31"
+        jql = inject_date_filter(jql, _s, _e)
+
         resolve_links = cmd.get("resolve_links", False)
 
         # 执行搜索
@@ -1404,6 +1485,8 @@ def main() -> None:
         st.session_state["kpi_snapshot_keys"] = None
         st.session_state.pop("preset_cat_selector", None)
         st.session_state.pop("preset_sub_selector", None)
+        st.session_state.pop("preset_start_date", None)
+        st.session_state.pop("preset_end_date", None)
         st.rerun()
 
     # 显示第一步的结果
@@ -1435,6 +1518,7 @@ def main() -> None:
         display_columns = [
             "summary",
             "status",
+            "priority",
             "assignee",
             "reporter",
             "created",
@@ -1579,31 +1663,26 @@ def main() -> None:
 
             st.markdown("---")
 
-            # ── AppSec 服务类型分布（仅在对应预设下显示，作为第一个图表）──
-            if (
-                st.session_state.get("current_preset_cat") == "AppSec服务概览"
-                and st.session_state.get("current_preset_sub") == "AppSec所有service情况"
-            ):
-                st.subheader("AppSec 服务类型分布")
-                import requests as _req
-                import streamlit.components.v1 as _cv1
-                import json as _json
-                CHART_SERVER = "http://127.0.0.1:5050"
-                _df_svc = selected_df.copy()
-                _df_svc["_service"] = _df_svc.apply(_classify_appsec_service, axis=1)
-                for _col in ["created", "updated", "resolutiondate", "duedate", "created_date", "resolved_date"]:
-                    if _col in _df_svc.columns:
-                        _df_svc[_col] = _df_svc[_col].astype(str)
-                _json_str = _df_svc.to_json(orient="records", force_ascii=False)
-                _payload_bytes = f'{{"records": {_json_str}}}'.encode("utf-8")
-                try:
-                    _resp = _req.post(f"{CHART_SERVER}/appsec_service_charts", data=_payload_bytes,
-                                      headers={"Content-Type": "application/json"}, timeout=10)
-                    _resp.raise_for_status()
-                    _cv1.html(_resp.text, height=1000, scrolling=True)
-                except Exception as _e:
-                    st.error(f"图表服务未启动：{_e}")
-                st.markdown("---")
+            # ── AppSec 服务类型分布（所有结果集均显示）──────────────────────
+            import requests as _req
+            import streamlit.components.v1 as _cv1
+            import json as _json
+            CHART_SERVER = "http://127.0.0.1:5050"
+            _df_svc = selected_df.copy()
+            _df_svc["_service"] = _df_svc.apply(_classify_appsec_service, axis=1)
+            for _col in ["created", "updated", "resolutiondate", "duedate", "created_date", "resolved_date"]:
+                if _col in _df_svc.columns:
+                    _df_svc[_col] = _df_svc[_col].astype(str)
+            _json_str = _df_svc.to_json(orient="records", force_ascii=False)
+            _payload_bytes = f'{{"records": {_json_str}}}'.encode("utf-8")
+            try:
+                _resp = _req.post(f"{CHART_SERVER}/appsec_service_charts", data=_payload_bytes,
+                                  headers={"Content-Type": "application/json"}, timeout=10)
+                _resp.raise_for_status()
+                _cv1.html(_resp.text, height=1000, scrolling=True)
+            except Exception as _e:
+                st.error(f"图表服务未启动：{_e}")
+            st.markdown("---")
 
             # ── AppSec Service By Month 月度对比图表 ─────────────────────────────
             if (
@@ -1629,13 +1708,14 @@ def main() -> None:
                         _m += 12
                         _y -= 1
                     _months.append(f"{_y}-{_m:02d}")
+                _months_bar = _months[-3:]  # 创建 vs 已解决图只取近 3 个月
                 _df_mon = selected_df.copy()
                 _df_mon["_service"] = _df_mon.apply(_classify_appsec_service, axis=1)
                 for _col in ["created", "updated", "resolutiondate", "duedate", "created_date", "resolved_date"]:
                     if _col in _df_mon.columns:
                         _df_mon[_col] = _df_mon[_col].astype(str)
                 _json_str = _df_mon.to_json(orient="records", force_ascii=False)
-                _payload_bytes = f'{{"records": {_json_str}, "months": {_json.dumps(_months)}}}'.encode("utf-8")
+                _payload_bytes = f'{{"records": {_json_str}, "months": {_json.dumps(_months)}, "months_bar": {_json.dumps(_months_bar)}}}'.encode("utf-8")
                 try:
                     _resp = _req.post(f"{CHART_SERVER}/appsec_monthly_charts", data=_payload_bytes,
                                       headers={"Content-Type": "application/json"}, timeout=10)
