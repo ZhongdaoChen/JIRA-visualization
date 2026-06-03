@@ -1708,7 +1708,8 @@ def main() -> None:
                 if _col in _df_svc.columns:
                     _df_svc[_col] = _df_svc[_col].astype(str)
             _json_str = _df_svc.to_json(orient="records", force_ascii=False)
-            _payload_bytes = f'{{"records": {_json_str}}}'.encode("utf-8")
+            _jira_base = st.session_state.get("jira_base_url", "").rstrip("/")
+            _payload_bytes = f'{{"records": {_json_str}, "jira_base_url": "{_jira_base}"}}'.encode("utf-8")
             try:
                 _resp = _req.post(f"{CHART_SERVER}/appsec_service_charts", data=_payload_bytes,
                                   headers={"Content-Type": "application/json"}, timeout=10)

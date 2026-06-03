@@ -310,23 +310,16 @@ def _pie_option(df: pd.DataFrame) -> dict:
 
 
 def _appsec_pie_scripts(cid: str, labels: list, values: list, colors: list,
-                        ticket_map: dict, title: str) -> str:
-    """Return a JS IIFE that renders an ECharts donut pie with ticket tooltip."""
-    MAX_DISPLAY = 15
-    # Build tooltip lines per label (capped)
-    tooltip_lines = {}
-    for lbl, keys in ticket_map.items():
-        lines = keys[:MAX_DISPLAY]
-        text = "\\n".join(lines)
-        if len(keys) > MAX_DISPLAY:
-            text += f"\\n...以及另外 {len(keys) - MAX_DISPLAY} 条"
-        tooltip_lines[lbl] = text
-
-    ticket_map_json = json.dumps(tooltip_lines, ensure_ascii=False)
+                        ticket_map: dict, title: str, jira_base_url: str = "") -> str:
+    """Return a JS IIFE that renders an ECharts donut pie.
+    On hover, shows a parent-DOM overlay with clickable JIRA ticket links."""
+    ticket_map_json = json.dumps(ticket_map, ensure_ascii=False)
+    base_url = jira_base_url.rstrip("/")
+    overlay_id = f"pie_ov_{cid}"
     option = {
         "backgroundColor": "transparent",
         "title": {"text": title, "left": "center", "textStyle": {"color": "#ccc", "fontSize": 13}},
-        "tooltip": {"trigger": "item"},
+        "tooltip": {"show": False},
         "legend": {"orient": "vertical", "left": "left", "textStyle": {"color": "#ccc"}, "top": "middle"},
         "series": [{
             "type": "pie",
@@ -340,20 +333,73 @@ def _appsec_pie_scripts(cid: str, labels: list, values: list, colors: list,
     }
     option_json = json.dumps(option, ensure_ascii=False)
     return f"""(function() {{
-  var ticketMap = {ticket_map_json};
-  var opt = {option_json};
-  opt.tooltip = {{
-    trigger: 'item',
-    formatter: function(params) {{
-      var pct = (params.percent || 0).toFixed(1);
-      var tickets = ticketMap[params.name] || '';
-      var lines = tickets ? tickets.split('\\n').join('<br>') : '';
-      return '<b>' + params.name + '</b><br>数量：' + params.value + '  占比：' + pct + '%'
-        + (lines ? '<br>─────────────────<br>' + lines : '');
-    }}
-  }};
+  var TICKET_MAP = {ticket_map_json};
+  var BASE_URL = '{base_url}';
+  var OID = '{overlay_id}';
+
+  // Inject overlay + styles into parent document (same origin)
+  var _ov = parent.document.getElementById(OID);
+  if (!_ov) {{
+    var _st = parent.document.createElement('style');
+    _st.textContent = [
+      '#{overlay_id}{{position:fixed;z-index:99999;display:none;',
+      'background:rgba(15,23,42,0.97);border:1px solid rgba(148,163,184,0.3);',
+      'border-radius:8px;padding:10px 14px;max-height:360px;overflow-y:auto;',
+      'min-width:160px;max-width:290px;box-shadow:0 8px 32px rgba(0,0,0,0.55);',
+      'pointer-events:auto;}}',
+      '#{overlay_id} .pov-title{{font-size:12px;color:#94a3b8;margin-bottom:8px;font-weight:600;}}',
+      '#{overlay_id} a{{display:block;font-size:12px;color:#93c5fd;text-decoration:none;padding:2px 0;white-space:nowrap;}}',
+      '#{overlay_id} a:hover{{color:#60a5fa;text-decoration:underline;}}',
+      '#{overlay_id} .pov-more{{font-size:11px;color:#64748b;margin-top:4px;}}'
+    ].join('');
+    parent.document.head.appendChild(_st);
+    _ov = parent.document.createElement('div');
+    _ov.id = OID;
+    parent.document.body.appendChild(_ov);
+  }}
+
+  // Track mouse position inside iframe
+  var _mx = 0, _my = 0;
+  document.addEventListener('mousemove', function(e) {{ _mx = e.clientX; _my = e.clientY; }});
+
+  var _hideTimer = null;
+  function showOverlay(name, keys) {{
+    if (_hideTimer) {{ clearTimeout(_hideTimer); _hideTimer = null; }}
+    var MAX = 30;
+    var html = '<div class="pov-title">' + name + ' (' + keys.length + ' 条)</div>';
+    keys.slice(0, MAX).forEach(function(k) {{
+      html += BASE_URL
+        ? '<a href="' + BASE_URL + '/browse/' + k + '" target="_blank">' + k + '</a>'
+        : '<span style="display:block;font-size:12px;color:#ccc;padding:2px 0">' + k + '</span>';
+    }});
+    if (keys.length > MAX) html += '<div class="pov-more">...以及另外 ' + (keys.length - MAX) + ' 条</div>';
+    _ov.innerHTML = html;
+
+    var r = window.frameElement ? window.frameElement.getBoundingClientRect() : {{left:0,top:0}};
+    var absX = r.left + _mx, absY = r.top + _my;
+    var W = parent.innerWidth || 1200, H = parent.innerHeight || 900;
+    var L = absX + 14; if (L + 300 > W - 10) L = absX - 300 - 14;
+    var T = absY + 14; if (T + 380 > H - 10) T = absY - 380 - 14;
+    _ov.style.left = L + 'px'; _ov.style.top = T + 'px';
+    _ov.style.display = 'block';
+  }}
+  function hideOverlay() {{
+    _hideTimer = setTimeout(function() {{
+      if (!_ov.matches(':hover')) _ov.style.display = 'none';
+    }}, 200);
+  }}
+  _ov.addEventListener('mouseleave', function() {{ _ov.style.display = 'none'; }});
+
   var chart = echarts.init(document.getElementById('{cid}'), 'dark');
-  chart.setOption(opt);
+  chart.setOption({option_json});
+  chart.on('mouseover', function(params) {{
+    if (params.componentType !== 'series') return;
+    var keys = TICKET_MAP[params.name] || [];
+    if (!keys.length) return;
+    showOverlay(params.name, keys);
+  }});
+  chart.on('mouseout', hideOverlay);
+  chart.on('globalout', hideOverlay);
   window.addEventListener('resize', function() {{ chart.resize(); }});
 }})();
 """
@@ -640,7 +686,8 @@ def charts():
 @app.route("/appsec_service_charts", methods=["POST"])
 def appsec_service_charts():
     """AppSec service pie + status pie + service stacked bar."""
-    df, _ = _parse_request()
+    df, raw = _parse_request()
+    jira_base_url = raw.get("jira_base_url", "")
 
     # Build service ticket_map
     svc_ticket_map: dict[str, list] = {c: [] for c in _APPSEC_CAT_ORDER}
@@ -668,9 +715,9 @@ def appsec_service_charts():
 
     scripts = (
         _appsec_pie_scripts("svc_pie", svc_active, svc_values, svc_colors,
-                            {c: svc_ticket_map[c] for c in svc_active}, "服务类型分布")
+                            {c: svc_ticket_map[c] for c in svc_active}, "服务类型分布", jira_base_url)
         + _appsec_pie_scripts("status_pie", st_active, st_values, st_colors,
-                              {s: status_ticket_map[s] for s in st_active}, "修复状态分布")
+                              {s: status_ticket_map[s] for s in st_active}, "修复状态分布", jira_base_url)
         + _appsec_service_bar_scripts("svc_bar", df)
     )
 
