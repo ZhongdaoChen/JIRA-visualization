@@ -54,11 +54,11 @@ _APPSEC_COLORS_MAP = {
     "BugBounty":          PALETTE["green"],
     "Container Security": PALETTE["amber"],
     "DAST":               PALETTE["orange"],
-    "Wiz":                PALETTE["teal"],
+    "Cloud Security AppSec Scope": PALETTE["teal"],
     "Ad-hoc":             PALETTE["indigo"],
     "Other":              PALETTE["slate"],
 }
-_APPSEC_CAT_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Wiz", "Ad-hoc", "Other"]
+_APPSEC_CAT_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Cloud Security AppSec Scope", "Ad-hoc", "Other"]
 _APPSEC_STATUS_COLORS = {
     "Open":     PALETTE["blue"],
     "Accepted": PALETTE["green"],

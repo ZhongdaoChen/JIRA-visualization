@@ -709,15 +709,16 @@ _APPSEC_PENTEST_TAGS = frozenset({"ChaiTin_PenTests"})
 _APPSEC_BUGBOUNTY_TAGS = frozenset({"BugBounty"})
 _APPSEC_CONTAINER_TAGS = frozenset({"GCA-Issues-Q1-Critical", "ContainerSecurity", "ContainerSecurityL1.3"})
 _APPSEC_DAST_TAGS = frozenset({"DAST"})
-_APPSEC_WIZ_TAGS = frozenset({"Wiz", "GCA_AppSec", "Wiz_SecretData", "Wiz_IAM"})
-_APPSEC_CATEGORY_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Wiz", "Ad-hoc", "Other"]
+_CLOUD_SEC_REQUIRED = "GCA_AppSec"
+_CLOUD_SEC_QUALIFIERS = frozenset({"Wiz_IAM", "cloud-security"})
+_APPSEC_CATEGORY_ORDER = ["SAST", "Pentest", "BugBounty", "Container Security", "DAST", "Cloud Security AppSec Scope", "Ad-hoc", "Other"]
 _APPSEC_COLORS = {
     "SAST": "#a78bfa",
     "Pentest": "#38bdf8",
     "BugBounty": "#4ade80",
     "Container Security": "#f59e0b",
     "DAST": "#fb923c",
-    "Wiz": "#34d399",
+    "Cloud Security AppSec Scope": "#34d399",
     "Ad-hoc": "#6366f1",
     "Other": "#94a3b8",
 }
@@ -739,8 +740,8 @@ def _classify_appsec_service(row) -> str:
         return "Container Security"
     if label_set & _APPSEC_DAST_TAGS:
         return "DAST"
-    if any("wiz" in lbl.lower() for lbl in label_set) or label_set & _APPSEC_WIZ_TAGS:
-        return "Wiz"
+    if _CLOUD_SEC_REQUIRED in label_set and label_set & _CLOUD_SEC_QUALIFIERS:
+        return "Cloud Security AppSec Scope"
     if not label_set:
         return "Ad-hoc"
     return "Other"
