@@ -628,9 +628,38 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
     # 处理 Issue Link
     if has_link:
         target_key = cmd["link_to"]
-        link_type = "Testing discovered"  # 固定的 link type
+        link_type = "Testing discovered"  # 默认期望的 link type 关键词
 
         with st.spinner(f"正在将 {len(raw_issues)} 条 Issue link 到 {target_key}..."):
+            # ── 解析真实 link type 名称（模糊匹配）──────────────────────────
+            try:
+                available_types = client.get_issue_link_types()
+                candidates = TESTING_LINK_TYPES  # ["Testing discovered", "Discovered while testing", ...]
+                resolved_link_type = None
+                for lt in available_types:
+                    lt_name = lt.get("name", "")
+                    lt_inward = lt.get("inward", "")
+                    lt_outward = lt.get("outward", "")
+                    for cand in candidates:
+                        cand_lower = cand.lower()
+                        if any(cand_lower in s.lower() for s in [lt_name, lt_inward, lt_outward]):
+                            resolved_link_type = lt_name
+                            break
+                    if resolved_link_type:
+                        break
+                if not resolved_link_type:
+                    # 找不到匹配时列出所有可用类型
+                    type_names = [lt.get("name") for lt in available_types]
+                    st.error(
+                        f"在 JIRA 中未找到匹配 'Testing discovered' 的 Link Type。\n\n"
+                        f"可用的 Link Types：{type_names}\n\n"
+                        f"请在代码中更新 `TESTING_LINK_TYPES` 为正确的名称。"
+                    )
+                    return False, "Link Type 未找到"
+            except Exception as exc:
+                st.warning(f"无法获取 Link Types 列表，将使用默认名称：{exc}")
+                resolved_link_type = link_type
+
             linked = 0
             link_failed = 0
             error_rows = []
@@ -640,10 +669,10 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
                 if not key:
                     continue
                 try:
-                    client.link_issues_to_target(
-                        source_issue_keys=[key],
-                        target_issue_key=target_key,
-                        link_type_name=link_type,
+                    client.create_issue_link(
+                        link_type_name=resolved_link_type,
+                        inward_issue_key=key,
+                        outward_issue_key=target_key,
                     )
                     linked += 1
                 except Exception as exc:
@@ -653,9 +682,14 @@ def execute_update_operations(client, raw_issues, fields_to_update, cmd, email_t
                         "error": str(exc),
                     })
 
-            st.success(
-                f"Issue Link：共尝试 {linked + link_failed} 条，成功 {linked} 条，失败 {link_failed} 条。"
-            )
+            if link_failed == 0:
+                st.success(
+                    f"Issue Link：共 {linked} 条成功 link 到 {target_key}（Link Type: {resolved_link_type}）。"
+                )
+            else:
+                st.warning(
+                    f"Issue Link：共尝试 {linked + link_failed} 条，成功 {linked} 条，失败 {link_failed} 条。"
+                )
             if error_rows:
                 st.markdown("#### Issue Link 失败详情")
                 st.dataframe(error_rows, use_container_width=True, hide_index=True)
