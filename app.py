@@ -54,12 +54,16 @@ def build_jql(
     return " AND ".join(clauses) + " ORDER BY created DESC"
 
 
-def inject_date_filter(jql: str, start_date: str, end_date: str) -> str:
+def inject_date_filter(jql: str, start_date: Optional[str], end_date: Optional[str]) -> str:
     """
     将现有 JQL 中的日期条件替换为用户指定的时间跨度。
-    新条件：(created >= start AND created <= end) OR (resolutiondate >= start AND resolutiondate <= end)
+    新条件会覆盖 created/resolutiondate/duedate 的旧日期条件。
+    若起止日期都为空，则不改写 JQL。
     """
     import re
+
+    if not start_date and not end_date:
+        return jql
 
     # 移除复合模式：(created >= "X" OR resolutiondate >= "X")
     jql = re.sub(
@@ -86,10 +90,15 @@ def inject_date_filter(jql: str, start_date: str, end_date: str) -> str:
     jql = re.sub(r'\(\s*\)', '', jql)
     jql = jql.strip()
 
-    date_clause = (
-        f'(created >= "{start_date}" AND created <= "{end_date}"'
-        f' OR resolutiondate >= "{start_date}" AND resolutiondate <= "{end_date}")'
-    )
+    created_parts = []
+    resolution_parts = []
+    if start_date:
+        created_parts.append(f'created >= "{start_date}"')
+        resolution_parts.append(f'resolutiondate >= "{start_date}"')
+    if end_date:
+        created_parts.append(f'created <= "{end_date}"')
+        resolution_parts.append(f'resolutiondate <= "{end_date}"')
+    date_clause = f"({' AND '.join(created_parts)} OR {' AND '.join(resolution_parts)})"
 
     # 在 ORDER BY 之前插入，或直接追加
     order_match = re.search(r'\bORDER\s+BY\b', jql, flags=re.IGNORECASE)
@@ -1397,11 +1406,11 @@ def main() -> None:
         jql = sanitize_jql(jql)
         jql = enforce_project(jql)  # 兜底：确保始终在 GINFOSEC project 下查询
 
-        # 应用时间跨度筛选（未填则默认 2026 全年）
+        # 应用时间跨度筛选；起止日期都为空时不额外限制时间范围
         _filter_start = st.session_state.get("preset_start_date")
         _filter_end = st.session_state.get("preset_end_date")
-        _s = str(_filter_start) if _filter_start else "2026-01-01"
-        _e = str(_filter_end) if _filter_end else "2026-12-31"
+        _s = str(_filter_start) if _filter_start else None
+        _e = str(_filter_end) if _filter_end else None
         jql = inject_date_filter(jql, _s, _e)
 
         resolve_links = cmd.get("resolve_links", False)
